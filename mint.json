@@ -55,7 +55,11 @@
       "pages": [
         "get-started/signup",
         "get-started/projects",
-        "get-started/lab"
+        "get-started/lab",
+        "get-started/monitoring",
+        "get-started/repositories",
+        "get-started/launchpad",
+        "get-started/sdk"
       ]
     },
     {
