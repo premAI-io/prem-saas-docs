@@ -54,7 +54,7 @@
       "group": "Get Started",
       "pages": [
         "get-started/signup",
-        "get-started/manage-projects",
+        "get-started/projects",
         "get-started/lab"
       ]
     },
