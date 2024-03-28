@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Starter Kit",
+  "name": "Prem",
   "logo": {
     "dark": "/logo/dark.svg",
     "light": "/logo/light.svg"
@@ -45,7 +45,7 @@
   ],
   "navigation": [
     {
-      "group": "Introduction",
+      "group": "Home",
       "pages": [
         "introduction"
       ]
@@ -54,7 +54,8 @@
       "group": "Get Started",
       "pages": [
         "get-started/signup",
-        "get-started/manage-projects"
+        "get-started/manage-projects",
+        "get-started/lab"
       ]
     },
     {
