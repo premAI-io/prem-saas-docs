@@ -43,11 +43,15 @@ import premai
 import streamlit as st 
 
 premai_api_key = st.secrets.premai_api_key
-premai_project_id = 4071
-premai_repository_id = 2100
+premai_project_id = 123456 
+premai_repository_id = 123456
 prem_client = premai.Prem(api_key=premai_api_key)
 
 ```
+
+<Note>
+Both `premai_project_id` and `premai_repository_id` are dummy ids. So in your case please ensure you have a valid project_id and repository_id. You can know more about project_id [here](/get-started/projects.mdx) and repository_id [here](/get-started/repositories.mdx).
+</Note>
 
 ## Uploading documents to Prem repositories
 
