@@ -56,6 +56,14 @@ generation_kwargs = {
 Make sure you have an account at [Prem AI Platform](https://app.premai.io) and a valid [project id and an API Key](https://docs.premai.io/introduction). 
 </Note>
 
+We used the following system prompt.
+
+```
+You are an expert in SQL. You can understand and write complex SQL queries. You will be given some plain text as a questions and you are required to generate SQL query from that. Do not generate anything else. 
+```
+
+Additionally we set the temperature to be 0.1 and max_tokens to 500. You can copy these configurations to your experiment to reproduce or get started with your own implementation.
+
 Now, we instantiate our `lm` object and test it before moving forward. 
 
 <CodeGroup>
