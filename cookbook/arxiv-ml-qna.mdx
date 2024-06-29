@@ -6,6 +6,15 @@ Welcome to our fifth recipe of PremAI cookbook. In this recipe, we are going to 
 
 Those who are not familiar with [Qdrant](https://qdrant.tech/), it is an amazing open-source vector database and similarity search engine. Qdrant can also be hosted locally. If you are not familiar with DSPy, checkout our [introductory recipe on using DSPy](https://docs.premai.io/cookbook/text-2-sql). We have lot of introductory concepts there. You can also check out [DSPy documentation](https://dspy-docs.vercel.app/) for more information. 
 
+We also create a simple webapp using streamlit which looks like this:
+
+<img
+  src="/images/cookbook/arxiv paper search.jpeg"
+  alt="Playground"
+/>
+
+ You can find the [full code here](https://github.com/premAI-io/cookbook/arxiv-ml-qna).
+
 ### Objective
 
 The objective of this tutorial is simple. We are going to build a simple RAG pipeline using the above mentioned tools to search through relevant papers in arXiv and answer user questions correctly citing those answers. So high level here are the steps:
@@ -342,3 +351,188 @@ print(prediction.context)
 You can even return more metadata like paper title, paper link (which would be not passed as context) but for references to the user so that they can get some relevant results.
 
 Congratulations, now you know how to make a basic RAG pipeline using PremAI, DSPy and Qdrant. 
+
+### Creating the streamlit web app `Optional`
+
+In this section we are going to show you how to create a simple streamlit app as shown above. You can find the [full code here](https://github.com/premAI-io/cookbook/arxiv-ml-qna).
+
+Although we are not doing full explaination of this code, since we are using a boiler plate code which was used in [Chat With PDF](/cookbook/chat-with-pdf.mdx), [Chat with SQL Tables](/cookbook/chat-with-sql.mdx). So you can refer those recipes to see an extended explaination of the streamlit boilerplate for doing chat.
+
+We initially start with writning a code to to get the overall pipeline. Here it is how that looks like:
+
+<Accordion title="Function to set the pipeline when given Qdrant collection name">
+
+```python Python
+import dspy
+from qdrant_client import QdrantClient
+from dspy.retrieve.qdrant_rm import QdrantRM
+from dsp.modules.sentence_vectorizer import PremAIVectorizer 
+
+def get_retriever(
+    qdrant_collection_name: str, 
+    qdrant_client: QdrantClient, 
+    premai_project_id: str,
+    embedding_model_name: str,
+    document_field: str,
+    premai_api_key: Optional[str]=None,
+):
+    retriever = QdrantRM(
+        qdrant_collection_name=qdrant_collection_name,
+        qdrant_client=qdrant_client,
+        vectorizer=PremAIVectorizer(
+            project_id=premai_project_id,
+            model_name=embedding_model_name,
+            api_key=premai_api_key
+        ),
+        document_field=document_field,
+        k=3
+    )
+    return retriever
+
+def setup_retriever_and_llm(collection_name: str):
+    llm = PremAI(
+        project_id=premai_project_id, 
+        **{"temperature":0.1, "max_tokens":1024}
+    )
+    abstract_retriever = get_retriever(
+        premai_api_key=premai_api_key,
+        qdrant_collection_name=collection_name,
+        qdrant_client=qdrant_client,
+        premai_project_id=premai_project_id,
+        document_field="abstract",
+        embedding_model_name=embedding_model_name
+    )
+
+    title_retriever = get_retriever(
+        premai_api_key=premai_api_key,
+        qdrant_collection_name=collection_name,
+        qdrant_client=qdrant_client,
+        premai_project_id=premai_project_id,
+        document_field="title",
+        embedding_model_name=embedding_model_name
+    )
+
+    dspy.settings.configure(lm=llm, rm=abstract_retriever)
+    pipeline = RAG(title_retriever=title_retriever)
+    return pipeline 
+```
+</Accordion>
+
+If you see in this above code, we have initialized two retrievers, where one is set with DSPy settings which will do the actual retrieval and put it inside the LLM's context. However the second retriever is responsible to retrieve the titles of the paper (for the same contexts) so that we can show it as the returned sources. This means we need to do a slight change in our DSPy module. 
+
+<Accordion title="DSPy module with two retrievers">
+```python Python
+class RAG(dspy.Module):
+    def __init__(self, title_retriever):
+        self.generate_answer = dspy.Predict(GenerateAnswer)
+        self.retriever = dspy.Retrieve(k=3)
+        self.title_retriever = title_retriever
+    
+    def forward(self, question):
+        context = self.retriever(question).passages     
+        titles = self.title_retriever(question) 
+        prediction = self.generate_answer(
+            context=context, question=question
+        )        
+        return [
+            dspy.Prediction(context=context, answer=prediction.answer), 
+            [title["long_text"] for title in titles]
+        ]
+```
+</Accordion>
+
+Ok, we are now all set to write our streamlit function to do the chat with the documents inside the collection. However we first write one small functions to list out all the available collections. 
+
+```python Python
+def get_all_collections(client: QdrantClient):
+    return [collection.name for collection in client.get_collections().collections] 
+```
+
+Now we build our streamlit side bar to select the collection from the available Qdrant Collections.
+
+<Accordion title="Streamlit side bar">
+```python Python
+with st.sidebar:
+    all_collections = get_all_collections(client=qdrant_client)
+    selected_collection = st.selectbox(label="Select your collection", options=all_collections)
+    if selected_collection is None:
+        st.error("No collections found")
+    else:
+        st.success(
+            f"You will be chatting with Table: {selected_collection}" 
+        )
+
+# ---- Main UI ---- #
+
+if selected_collection is None:
+    st.error(
+        "Please set up Qdrant Engine properly. No Collections found."
+    )
+else:
+    pipeline = setup_retriever_and_llm(collection_name=selected_collection)
+    chat(pipeline=pipeline)
+```
+</Accordion>
+
+Finally we write our chat function. This chat function will use our RAG module to do the retrieval and augment the LLM generations with the contexts retrieved.
+
+<Accordion title="Chat function">
+```python
+import streamlit as st
+
+def chat(pipeline):
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+    
+    if prompt := st.chat_input("Please write your query"):
+        user_content = {"role": "user", "content": prompt}
+        st.session_state.messages.append(user_content)
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            full_response = ""
+
+            while not full_response:
+                with st.spinner("Thinking ...."):
+                    try:
+                        response, titles = pipeline(prompt)
+                        response_str = response.answer
+                        response_contexts = response.context
+                        response_meta = [
+                            {"title": title, "abstract": abstract}
+                            for title, abstract in zip(titles, response_contexts)
+                        ]
+                    except Exception:
+                        response_str = "Failed to respond"
+                        response_meta = []
+                
+                fr = ""
+                full_response = str(response_str)
+                for i in full_response:
+                    time.sleep(0.01)
+                    fr += i
+                    message_placeholder.write(fr + "▌")
+                message_placeholder.write(f"{full_response}")
+                
+                if response_meta is not None and len(response_meta) > 0:
+                    for meta in response_meta:
+                        title = meta["title"]
+                        abstract = meta["abstract"]
+                        with st.expander(label=title):
+                            st.write(abstract)
+                else:
+                    st.warning("No contexts found")
+
+            st.session_state.messages.append(
+                {"role": "assistant", "content": full_response}
+            )
+```
+</Accordion>
+
+Congratulations if you have completed till here. Check out our other tutorials and also our blog for more such amazing usecases and contents. 
