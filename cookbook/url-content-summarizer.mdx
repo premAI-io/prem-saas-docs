@@ -154,7 +154,7 @@ Now lets write our summarization pipeline. This can be done with the following s
 4. We define a `combined_document_chain` which combines all the summarized chunks (stacking each of them one after the other) using the [StuffDocumentsChain](https://python.langchain.com/v0.2/docs/tutorials/summarization/#stuff).
 5. Then a `reduce_document_chain`, which takes those combined documents and runs the reduce (i.e. another summarization) on that stuffed documents. 
 6. Finally a map_reduce_chain which combines all the above chains into a single chain. 
-7. Run the chain and return the results:
+7. Run the chain and return the results
 
 ```python
 def summarize_url(url: str, llm: ChatPremAI) -> dict:
