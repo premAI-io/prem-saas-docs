@@ -12,10 +12,12 @@ If you are not familiar with DSPy, check out our [**introductory recipe on using
 
 To give a nice visualization, we use Streamlit, and here is how the final app would look:
 
+
 <img
   src="/images/cookbook/arxiv paper search.jpeg"
   alt="Playground"
 />
+
 
 So without further ado, let’s get started. You can find the [full source code here](https://github.com/premAI-io/cookbook/arxiv-ml-qna).
 
@@ -323,7 +325,6 @@ class RAG(dspy.Module):
 ```
 
 As you can see in the above code, we first define our retriever and then bind our signature with the `ChainOfThought` Module, which will take this blueprint to generate a better prompt but containing the same input and output fields mentioned while we define our base signature. 
-
 In the forward step (i.e., when we call the RAG module object), we will first retrieve all the contexts from the retriever and then use this context to generate the answer from our signature. After this, we will return the predictions in a good format containing the context and the answer so that we can see what abstracts were retrieved. 
 
 ### Testing our DSPy pipeline with an example prompt
