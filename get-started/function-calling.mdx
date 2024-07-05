@@ -462,7 +462,8 @@ messages = [{
 response = client.chat.completions.create(
     project_id=project_id,
     model=model_name,
-    messages=messages
+    messages=messages,
+    tools=tools
 )
 
 # Second pass 
