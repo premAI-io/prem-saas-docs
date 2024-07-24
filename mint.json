@@ -65,6 +65,7 @@
         "get-started/launchpad",
         "get-started/gym",
         "get-started/sdk",
+        "get-started/function-calling",
         "get-started/autopilot",
         "get-started/chat-completion-sse",
         "get-started/prem-templates",
@@ -93,7 +94,9 @@
       "pages": [
         "cookbook/chat-with-pdf",
         "cookbook/url-content-summarizer",
-        "cookbook/text-2-sql"
+        "cookbook/text-2-sql",
+        "cookbook/chat-with-sql",
+        "cookbook/arxiv-ml-qna"
       ]
     },
     {
