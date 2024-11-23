@@ -1,0 +1,110 @@
+---
+title: "OpenLIT"
+description: "This example explains how to use OpenLIT and OpenTelemetry to monitor PremAI applications"
+---
+
+[OpenLIT](https://github.com/openlit/openlit) an open source product that helps developers build and manage AI apps in production, effectively helping them improve accuracy. 
+As a self-hosted solution, it enables developers to experiment with LLMs, manage and version prompts, securely manage API keys, and provide safeguards against prompt injection and jailbreak attempts. 
+It also includes built-in OpenTelemetry-native observability and evaluation for the complete GenAI stack (LLMs, vector databases, and GPUs).
+
+## Installation and Setup
+
+We start by installing `openlit` and `premai-sdk`. Use the following commands to install them:
+
+```bash
+pip install openlit premai
+```
+
+Before proceeding further, please make sure that you have made an account on PremAI and already created a project. If not, please refer to the [quick start](https://docs.premai.io/introduction) guide to get started with the PremAI platform. Create your first project and grab your API key.
+
+### Step 1: Deploy OpenLIT Stack
+
+1. Git Clone OpenLIT Repository
+
+   Open your command line or terminal and run:
+
+   ```shell
+   git clone git@github.com:openlit/openlit.git
+   ```
+
+2. Self-host using Docker
+  
+   Deploy and run OpenLIT with the following command:
+
+   ```shell
+   docker compose up -d
+   ```
+
+> For instructions on installing in Kubernetes using Helm, refer to the [Kubernetes Helm installation guide](https://docs.openlit.io/latest/installation#kubernetes).
+
+### Instrument PremAI application with OpenLIT
+
+Once we have imported our required modules, let's set up our premai client and OpenTelemetry automatic-instrumentation with OpenLIT. For now, let's assume that our `project_id` is 123. However, be sure to use your actual project ID; otherwise, it will throw an error.
+
+<CodeGroup>
+
+```python PremAI SDK
+from premai import Prem
+import openlit
+
+client = Prem(
+    api_key=YOUR_API_KEY
+)
+
+openlit.init()
+
+system_prompt = "You're an helpful assistant"
+messages = [
+    {"role": "user", "content": "Who won the world series in 2020?"},
+]
+
+# Create completion
+response = client.chat.completions.create(
+    project_id=123,
+    system_prompt=system_prompt,
+    messages=messages,
+)
+
+print(response.choices)
+```
+
+```python LangChain
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_community.chat_models import ChatPremAI
+import openlit
+import os
+
+openlit.init()
+
+if "PREMAI_API_KEY" not in os.environ:
+    os.environ["PREMAI_API_KEY"] = YOUR_API_KEY
+
+chat = ChatPremAI(project_id=123, model_name="gpt-4o")
+
+human_message = HumanMessage(content="How to monitor AI Agents?")
+
+response = chat.invoke([human_message])
+print(response.content)
+```
+
+</CodeGroup>
+
+### Native OpenTelemetry Support
+
+> 💡 Info: If the `otlp_endpoint` or `OTEL_EXPORTER_OTLP_ENDPOINT` is not provided, the OpenLIT SDK will output traces directly to your console, which is recommended during the development phase.
+
+OpenLIT can send complete execution traces and metrics directly from your application to any OpenTelemetry endpoint. Configure the telemetry data destination as follows:
+
+| Purpose                                   | Parameter/Environment Variable                   | For Sending to OpenLIT         |
+|-------------------------------------------|--------------------------------------------------|--------------------------------|
+| Send data to an HTTP OTLP endpoint        | `otlp_endpoint` or `OTEL_EXPORTER_OTLP_ENDPOINT` | `"http://127.0.0.1:4318"`      |
+| Authenticate telemetry backends           | `otlp_headers` or `OTEL_EXPORTER_OTLP_HEADERS`   | Not required by default        |
+
+### Step 4: Visualize and Optimize!
+With the Observability data now being collected and sent to OpenLIT, the next step is to visualize and analyze this data to get insights into your AI application's performance, behavior, and identify areas of improvement.
+
+Just head over to OpenLIT at `127.0.0.1:3000` on your browser to start exploring. You can login using the default credentials
+  - **Email**: `user@openlit.io`
+  - **Password**: `openlituser`
+
+If you're sending metrics and traces to other observability tools, take a look at OpenLIT's [Connections Guide](https://docs.openlit.io/latest/connections/intro) to start using a pre-built dashboard they have created for these tools.
