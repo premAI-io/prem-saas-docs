@@ -63,8 +63,8 @@
     {
       "group": "Get started",
       "pages": [
-        "get-started/overview",
         "introduction",
+        "get-started/quick-start",
         "get-started/sdk"
       ]
     },
