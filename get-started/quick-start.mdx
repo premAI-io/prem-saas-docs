@@ -23,7 +23,6 @@ description: Let's create a Generative AI application in minutes.
 </Step>
 
 <Step title="Create a new project.">
-<Note>We set up a starter project for you already. You can either use the starter project provided or create a new project from scratch. It's up to you.</Note>
 ![GIF of how to create a new project with Prem](https://static.premai.io/prem-saas-docs/quickstart-guide/create-project.gif)
 <Tip>Make sure to take note of your Project ID. You'll need it to use the SDK. You can find your **Project ID** on the Project page under each project's title or on the Set Up page.</Tip>
  <img
@@ -46,6 +45,8 @@ description: Let's create a Generative AI application in minutes.
 </Step>
 
 <Step title="Now it's time to integrate Prem into your application.">
+Once you've launched your model using the launchpad, you can integrate it into your application using our [SDKs](/get-started/sdk).
+
 ## Choose an SDK and install
 <Tip>
   Prem also exposes a simple [REST API](/api-reference/introduction) for interacting with the platform. 
@@ -124,36 +125,36 @@ async function chatCompletion() {
 
 ## Next steps
 
+- Learn to [Autonomously fine-tune](/get-started/autonomous-fine-tuning) your AI models.
 - Continue to test AI Models in the [Lab](/get-started/lab).
 - Customize an AI model with knowledge from your documents using [repositories](/get-started/repositories).
-- Fine-tune your AI models in the [Gym](/get-started/gym).
 - Check out the [SDK](/get-started/sdk) and [API Reference](/api-reference/introduction).
 - Integrate your custom models into your codebase
 
 ## Read the guides
 
 <CardGroup cols={3}>
-  <Card title="Prem SDK" icon="plug" href="/get-started/sdk">
-    Integrate Prem into your products.
-  </Card>
+<Card title="Autonomous Fine-Tuning" icon="robot" href="/get-started/autonomous-fine-tuning">
+  Learn how you can use Prem to autonomously fine-tune your models.
+</Card>
+
+
+<Card title="Launchpad" icon="rocket" href="/get-started/launchpad">
+    Launch your preferred model.
+</Card>
 
 {" "}
 
-<Card title="Projects" icon="folder" href="/get-started/manage-projects">
-  Create and manage projects to organize your work.
+<Card title="SDKs" icon="flask" href="/get-started/sdk">
+    Seamlessly integrate Prem into your application.
 </Card>
-
-  <Card
-    title="Lab"
-    icon="flask"
-    href="/get-started/lab"
-  >
-    Experiment with different models in the Lab.
-  </Card>
 </CardGroup>
 
 <CardGroup cols={3}>
-  <Card title="Monitoring" icon="chart-line" href="/get-started/monitoring">
+  <Card title="Lab" icon="flask" href="/get-started/lab">
+    Experiment with different models in the Lab.
+  </Card>
+  <Card title="Traces" icon="chart-line" href="/get-started/monitoring">
     Monitor your AI integration.
   </Card>
   <Card
@@ -163,14 +164,6 @@ async function chatCompletion() {
   >
     Upload documents to your repositories.
   </Card>
-  <Card title="Launchpad" icon="rocket" href="/get-started/launchpad">
-    Launch your preferred model.
-  </Card>
 </CardGroup>
 
-<CardGroup cols={3}>
-  <Card title="Gym" icon="dumbbell" href="/get-started/gym">
-    Train your own Model.
-  </Card>
-</CardGroup>
 
