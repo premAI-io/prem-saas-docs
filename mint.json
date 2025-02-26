@@ -62,7 +62,11 @@
   "navigation": [
     {
       "group": "Get started",
-      "pages": ["introduction", "get-started/quick-start", "get-started/sdk"]
+      "pages": [
+        "introduction",
+        "get-started/quick-start",
+        "get-started/sdk"
+      ]
     },
     {
       "group": "Guides",
@@ -120,19 +124,27 @@
     },
     {
       "group": "Resources",
-      "pages": ["resources/faq"]
+      "pages": [
+        "resources/faq"
+      ]
     },
     {
       "group": "Release Notes",
-      "pages": ["release-notes/release-notes"]
+      "pages": [
+        "release-notes/release-notes"
+      ]
     },
     {
       "group": "API Documentation",
-      "pages": ["api-reference/introduction"]
+      "pages": [
+        "api-reference/introduction"
+      ]
     },
     {
       "group": "repositories",
-      "pages": ["api-reference/repositories/post-apirepositoriesrepositories"]
+      "pages": [
+        "api-reference/repositories/post-apirepositoriesrepositories"
+      ]
     },
     {
       "group": "repository-document",
@@ -142,15 +154,21 @@
     },
     {
       "group": "chat-completions",
-      "pages": ["api-reference/chat-completions/post-v1chatcompletions"]
+      "pages": [
+        "api-reference/chat-completions/post-v1chatcompletions"
+      ]
     },
     {
       "group": "embeddings",
-      "pages": ["api-reference/embeddings/post-v1embeddings"]
+      "pages": [
+        "api-reference/embeddings/post-v1embeddings"
+      ]
     },
     {
       "group": "v1",
-      "pages": ["api-reference/v1/get-v1get_dataset"]
+      "pages": [
+        "api-reference/v1/get-v1get_dataset"
+      ]
     },
     {
       "group": "models",
@@ -161,7 +179,9 @@
     },
     {
       "group": "feedbacks",
-      "pages": ["api-reference/feedbacks/post-v1set_trace_feedback"]
+      "pages": [
+        "api-reference/feedbacks/post-v1set_trace_feedback"
+      ]
     },
     {
       "group": "traces",
