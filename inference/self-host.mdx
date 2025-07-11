@@ -8,6 +8,11 @@ description: Learn how to self-host checkpoints using Hugging Face, VLLM and Oll
 Here is how you can download the checkpoints from the studio after you have fine-tuned your model. Once you have
 downloaded the checkpoints, you can unzip them and use the following inference engines to load the checkpoints and use them for inference.
 
+<img
+  src="https://static.premai.io/prem-saas-docs/inference/self-host/download-checkpoints.gif"
+  alt="Download Checkpoints"
+/>
+
 ---
 
 ## Inference Engines
@@ -86,7 +91,7 @@ print(tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_toke
 
 ### VLLM
 
-You can use the VLLM library to load the checkpoints and use them for inference using the [vllm](https://docs.vllm.ai/en/latest/) library.
+You can use the VLLM library to load the checkpoints and use them for inference using the [VLLM](https://docs.vllm.ai/en/latest/) library.
 
 <CodeGroup>
 ```python Full Fine-Tuning
