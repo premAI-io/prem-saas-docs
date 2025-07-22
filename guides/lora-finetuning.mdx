@@ -9,14 +9,14 @@ LoRA, or Low-Rank Adaptation, is a technique designed to make fine-tuning Large 
 
 In traditional fine-tuning, you have to update all the parameters of an LLM, which can be slow and resource-intensive.
 
-With LoRA, instead of changing the entire model, you add a few small, trainable components to the base LLM. These components are trained for your specific task, 
+With LoRA, instead of changing the entire model, you add a few small, trainable components to the base LLM. These components are trained for your specific task,
 allowing the model to adapt quickly without needing to retrain everything from scratch.
 
 ## When to use LoRA
 
-Because LoRA only updates a small part of the model, it's much faster than standard fine-tuning. 
-As a general rule, if regular fine-tuning of an LLM on a large dataset would take around 30 minutes, 
-LoRA can often get the job done in 10 minutes or less. This makes it a great choice when you want to 
+Because LoRA only updates a small part of the model, it's much faster than standard fine-tuning.
+As a general rule, if regular fine-tuning of an LLM on a large dataset would take around 30 minutes,
+LoRA can often get the job done in 10 minutes or less. This makes it a great choice when you want to
 adapt a model quickly and efficiently, without needing deep expertise in machine learning.
 
 Below is a table comparing when to use LoRA versus full fine-tuning:
@@ -41,7 +41,6 @@ Below is a table comparing when to use LoRA versus full fine-tuning:
 
 
 # Using LoRA in Prem Studio
-
 <Steps>
     <Step title="Create a New Fine-Tuning Job">
     <img src="https://static.premai.io/prem-saas-docs/guides/lora-ft-p1.gif" alt="GIF of clicking to create a new FT Job" />
@@ -67,4 +66,4 @@ Below is a table comparing when to use LoRA versus full fine-tuning:
 
 </Steps>
 
-Once you've started the process, your LoRA fine-tuning job will complete in just a few minutes. 
+Once you've started the process, your LoRA fine-tuning job will complete in just a few minutes.
