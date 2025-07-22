@@ -35,6 +35,12 @@
                 "pages": [
                   "guides/lora-finetuning"
                 ]
+              },
+              {
+                "group": "Uploading to Hugging Face",
+                "pages": [
+                  "guides/upload-to-hf"
+                ]
               }
             ]
           },
