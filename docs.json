@@ -31,15 +31,15 @@
             "group": "Guides 📚",
             "pages": [
               {
-                "group": "Finetuning",
+                "group": "General",
                 "pages": [
-                  "guides/lora-finetuning"
+                  "guides/upload-to-hf"
                 ]
               },
               {
-                "group": "Uploading to Hugging Face",
+                "group": "Finetuning",
                 "pages": [
-                  "guides/upload-to-hf"
+                  "guides/lora-finetuning"
                 ]
               }
             ]
