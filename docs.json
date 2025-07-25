@@ -112,13 +112,6 @@
             ]
           },
           {
-            "group": "Guides 📚 ",
-            "pages": [
-              "guides/lora-finetuning",
-              "guides/upload-to-hf"
-            ]
-          },
-          {
             "group": "Cookbook 🍳",
             "pages": [
               {
