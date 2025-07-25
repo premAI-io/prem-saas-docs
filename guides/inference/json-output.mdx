@@ -46,7 +46,8 @@ Perfect for dev teams building HR tools, job platforms, or internal automation s
     <Step title="Setup Environment">
         <CodeGroup>
             ```javascript javascript/typescript
-            npm install @premai/prem-sdk
+            npm install @premai/premai
+            npm install --save-dev @types/node
             export PREMAI_API_KEY=your_api_key
             ```
             ```bash python
@@ -152,10 +153,10 @@ Perfect for dev teams building HR tools, job platforms, or internal automation s
     <Step title="Initialize Client">
         <CodeGroup>
             ```javascript javascript/typescript
-            import PremAI from "premai";
+            import PremAI from "@premai/premai";
 
             const client = new PremAI({
-                apiKey: process.env.PREMAI_API_KEY,
+                apiKey: process.env.PREMAI_API_KEY || "",
             });
             ```
             ```python python
@@ -171,18 +172,18 @@ Perfect for dev teams building HR tools, job platforms, or internal automation s
     <Step title="Format Messages and Send Request with Expected Output Schema">
         <CodeGroup>
             ```javascript javascript/typescript
-            const messages = [
+            const messages: ChatCompletionsParams.Message[] = [
                 { role: "system", content: "You are a helpful assistant that can parse a person's info and return a structured object." },
                 { role: "user", content: cvText }
-            ];
+            ] as any;
 
-            const response = await client.chat.completions.create({
+            const response = await client.chat.completions({
                 model: "phi-4",
                 messages,
                 response_format: {
                     type: "json_schema",
                     json_schema: schema
-                }
+                },
             });
             ```
             ```python python
@@ -248,7 +249,8 @@ Perfect for dev teams building HR tools, job platforms, or internal automation s
 ## Full Copy-Paste Example
 <CodeGroup>
 ```javascript javascript/typescript
-import PremAI from "premai";
+import { ChatCompletionsParams } from "@premai/premai/resources/chat";
+import PremAI from "@premai/premai";
 
 type PersonCV = {
     name: string;
@@ -302,21 +304,21 @@ const cvText = `
 `;
 
 const client = new PremAI({
-    apiKey: process.env.PREMAI_API_KEY,
+    apiKey: process.env.PREMAI_API_KEY || "",
 });
 
-const messages = [
+const messages: ChatCompletionsParams.Message[] = [
     { role: "system", content: "You are a helpful assistant that can parse a person's info and return a structured object." },
     { role: "user", content: cvText }
-];
+] as any;
 
-const response = await client.chat.completions.create({
+const response = await client.chat.completions({
     model: "phi-4",
     messages,
     response_format: {
         type: "json_schema",
         json_schema: schema
-    }
+    },
 });
 
 const raw = response.choices[0].message.content || "";
