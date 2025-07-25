@@ -3,7 +3,7 @@ title: Locally serve OpenAI compatible Prem Fine-tuned Models
 description: Learn how to deploy Prem fine-tuned models as OpenAI compatible API all locally.
 ---
 
-After [uploading your fine-tuned models to Hugging Face](/guides/general/upload-to-hf), you can deploy them locally as OpenAI-compatible APIs using vLLM. This allows you to serve your custom models with the same interface as OpenAI's API, making integration seamless.
+You can deploy your fine-tuned models locally or on your own infrastructure as OpenAI-compatible APIs using vLLM. This allows you to serve your custom models with the same interface as OpenAI's API, making integration seamless.
 
 ## What is vLLM?
 
@@ -25,7 +25,7 @@ vLLM is a fast and memory-efficient inference engine for large language models. 
 ## Prerequisites
 
 Before starting, ensure you have:
-- Your model uploaded to Hugging Face (following our [upload guide](/guides/general/upload-to-hf))
+- Your fine-tuned model checkpoints. Optionally, you can upload them to Hugging Face (following our [upload guide](/guides/general/upload-to-hf))
 - Python 3.8 or higher
 - CUDA-compatible GPU (recommended for better performance)
 - Sufficient GPU memory for your model size
@@ -46,7 +46,7 @@ Before starting, ensure you have:
     </Step>
 
     <Step title="Verify Your Model Access">
-    Ensure your Hugging Face model is accessible. For private repositories, make sure you're logged in:
+    If you uploaded your model to Hugging Face, ensure your Hugging Face model is accessible. For private repositories, make sure you're logged in:
 
     ```bash
     huggingface-cli login
@@ -63,15 +63,17 @@ Full fine-tuned models contain all the updated parameters and can be served dire
     Launch your fine-tuned model as an OpenAI-compatible API server:
 
     ```bash
-    python -m vllm.entrypoints.openai.api_server \
-        --model your-username/your-model-name-full \
+    vllm serve your-username/your-model-name-full \
         --host 0.0.0.0 \
         --port 8000 \
         --served-model-name my-custom-model
     ```
 
     <Info>
-        Replace `your-username/your-model-name-full` with your actual Hugging Face model repository name from the upload guide.
+        Replace `your-username/your-model-name-full` with either your local model path or your actual Hugging Face model repository name from the upload guide.
+    </Info>
+    <Info>
+        For more options, see the [vLLM documentation](https://docs.vllm.ai/en/stable/serving/openai_compatible_server.html).
     </Info>
     </Step>
 
@@ -104,8 +106,7 @@ LoRA models require the base model plus the adapter weights. vLLM supports LoRA 
     For LoRA models, specify both the base model and the LoRA adapter:
 
     ```bash
-    python -m vllm.entrypoints.openai.api_server \
-        --model Qwen/Qwen2.5-1.5B \
+    vllm serve Qwen/Qwen2.5-1.5B \
         --enable-lora \
         --lora-modules my-custom-lora=your-username/your-model-name-lora \
         --host 0.0.0.0 \
@@ -189,7 +190,6 @@ async function getChatCompletion() {
 
 getChatCompletion();
 ```
-
 
 ## What's Next?
 
