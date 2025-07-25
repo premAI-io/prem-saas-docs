@@ -24,6 +24,38 @@ When fine-tuning an LLM in Prem Studio, you'll need to decide between **reasonin
 | **Debugging model decisions** 🔧 | ✅ | ❌ | Understanding why a model made specific choices |
 | **Creative writing** ✍️ | ❌ | ✅ | Story generation, marketing copy |
 
+## When to Choose Non-Reasoning
+
+<Steps>
+    <Step title="Speed-Critical Applications">
+    Choose non-reasoning when response time is crucial:
+
+    - **Real-time chat**: Customer support bots, conversational AI
+    - **High-throughput processing**: Batch content generation, data labeling
+    - **Interactive applications**: Autocomplete, instant search suggestions
+    </Step>
+
+    <Step title="Simple, Direct Tasks">
+    When the task has a clear input-output relationship:
+
+    - **Classification**: Sentiment analysis, topic categorization
+    - **Format conversion**: JSON to text, data transformation
+    - **Pattern matching**: Named entity recognition, keyword extraction
+
+    <Note>
+        Non-reasoning fine-tuning typically converges faster and requires less computational resources.
+    </Note>
+    </Step>
+
+    <Step title="Creative or Stylistic Tasks">
+    When the process matters less than the final output:
+
+    - Creative writing and content generation
+    - Style transfer and tone adjustment
+    - Language translation where fluency matters more than showing steps
+    </Step>
+</Steps>
+
 ## When to Choose Reasoning
 
 <Steps>
@@ -57,38 +89,6 @@ When fine-tuning an LLM in Prem Studio, you'll need to decide between **reasonin
     - Model behavior analysis
     - Identifying bias or errors in reasoning
     - Building trust with end users who need to understand outputs
-    </Step>
-</Steps>
-
-## When to Choose Non-Reasoning
-
-<Steps>
-    <Step title="Speed-Critical Applications">
-    Choose non-reasoning when response time is crucial:
-
-    - **Real-time chat**: Customer support bots, conversational AI
-    - **High-throughput processing**: Batch content generation, data labeling
-    - **Interactive applications**: Autocomplete, instant search suggestions
-    </Step>
-
-    <Step title="Simple, Direct Tasks">
-    When the task has a clear input-output relationship:
-
-    - **Classification**: Sentiment analysis, topic categorization
-    - **Format conversion**: JSON to text, data transformation
-    - **Pattern matching**: Named entity recognition, keyword extraction
-
-    <Note>
-        Non-reasoning fine-tuning typically converges faster and requires less computational resources.
-    </Note>
-    </Step>
-
-    <Step title="Creative or Stylistic Tasks">
-    When the process matters less than the final output:
-
-    - Creative writing and content generation
-    - Style transfer and tone adjustment
-    - Language translation where fluency matters more than showing steps
     </Step>
 </Steps>
 
