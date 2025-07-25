@@ -5,7 +5,7 @@ description: "This guide shows you how to prompt LLMs to return structured JSON 
 
 ## Why Use Structured Output?
 
-Structured output lets you define the exact format you expect in the model’s response, making it easier to parse, validate, and integrate downstream.
+Structured output lets you define the exact format you expect in the model's response, making it easier to parse, validate, and integrate downstream.
 
 ## Prerequisites
 
@@ -34,9 +34,9 @@ Structured output lets you define the exact format you expect in the model’s r
 - gpt-4o-mini
 
 ## Generate Structured Output with Prem
-This quick guide is gonna show you how to extract structured data from a raw CV using the Prem SDK. You’ll define a clear schema (e.g. name, email, education, work experience) and let the model return a clean JSON object that matches it.
+This quick guide is gonna show you how to extract structured data from a raw CV using the Prem SDK. You'll define a clear schema (e.g. name, email, education, work experience) and let the model return a clean JSON object that matches it.
 
-Why it’s useful:
+Why it's useful:
 It turns messy, unstructured CV text into structured data automatically — no regex, no manual parsing.
 
 When to use it:
@@ -45,7 +45,7 @@ Perfect for dev teams building HR tools, job platforms, or internal automation s
 <Steps>
     <Step title="Setup Environment">
         <CodeGroup>
-            ```javascript javascript/typescript
+            ```bash javascript/typescript
             npm install premai
             npm install --save-dev @types/node
             export PREMAI_API_KEY=your_api_key
@@ -163,8 +163,7 @@ Perfect for dev teams building HR tools, job platforms, or internal automation s
             import os
             from premai import PremAI
 
-            client = PremAI(api_key=os.getenv(“PREMAI_API_KEY"))
-
+            client = PremAI(api_key=os.getenv("PREMAI_API_KEY"))
             ```
         </CodeGroup>
     </Step>
@@ -193,13 +192,13 @@ Perfect for dev teams building HR tools, job platforms, or internal automation s
             ]
 
             response = client.chat.completions(
-                model=“phi-4",
+                model="phi-4",
                 messages=messages,
                 response_format={
-                    “type": “json_schema",
-                    “json_schema": {
-                        “name": PersonCV.name,
-                        “schema": PersonCV.model_json_schema(),
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": PersonCV.name,
+                        "schema": PersonCV.model_json_schema(),
                     },
                 },
             )
@@ -333,9 +332,9 @@ console.log(JSON.stringify(parsed, null, 2));
 
 ```
 
-```bash python
-from pydantic import BaseModel
+```python python
 import os
+from pydantic import BaseModel
 from premai import PremAI
 import json
 
@@ -372,7 +371,7 @@ cv_text = """
     Dean's List, University of Example, 2021-2024
 """
 
-client = PremAI(api_key=os.getenv(“PREMAI_API_KEY"))
+client = PremAI(api_key=os.getenv("PREMAI_API_KEY"))
 
 messages = [
     {"role": "system", "content": "You are a helpful assistant that can parse a person's info and return a structured object."},
@@ -380,13 +379,13 @@ messages = [
 ]
 
 response = client.chat.completions(
-    model=“phi-4",
+    model="phi-4",
     messages=messages,
     response_format={
-        “type": “json_schema",
-        “json_schema": {
-            “name": PersonCV.__name__,
-            “schema": PersonCV.model_json_schema(),
+        "type": "json_schema",
+        "json_schema": {
+            "name": PersonCV.__name__,
+            "schema": PersonCV.model_json_schema(),
         },
     },
 )
@@ -408,9 +407,9 @@ print(json.dumps(parsed.model_dump(), indent=2))
 
 ## Pro Tips
 
-- If you run into JSON parsing errors, try using the [instructor](https://python.useinstructor.com/) package — it can automatically fix malformed model outputs.
-- If the model doesn’t follow your schema correctly, simplify the schema by reducing nesting or optional fields.
-- Be explicit in your instructions (e.g., “Return only valid JSON without any explanation or extra text.”)
+- If you run into JSON parsing errors, try using the [instructor](https://python.useinstructor.com/) and [json-repair](https://github.com/mangiucugna/json_repair) package — they can help you automatically fix malformed model outputs.
+- If the model doesn't follow your schema correctly, simplify the schema by reducing nesting or optional fields.
+- Be explicit in your instructions (e.g., "Return only valid JSON without any explanation or extra text.")
 - Include examples in your prompt (few-shot prompting) to help the model understand the expected format more accurately.
 
 ## Other Common Use-Cases

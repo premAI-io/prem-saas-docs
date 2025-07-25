@@ -38,12 +38,6 @@
                 ]
               },
               {
-                "group": "Inference",
-                "pages": [
-                  "guides/inference/json-output"
-                ]
-              },
-              {
                 "group": "Datasets",
                 "pages": [
                   "guides/datasets/dataset-best-practices",
@@ -61,6 +55,12 @@
                 "group": "Evaluation",
                 "pages": [
                   "guides/evaluation/writing-good-metrics"
+                ]
+              },
+              {
+                "group": "Inference",
+                "pages": [
+                  "guides/inference/json-output"
                 ]
               }
             ]
