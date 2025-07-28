@@ -81,6 +81,19 @@ This happens automatically when using the **Autosplit** functionality if "Allow 
 </Warning>
 </Step>
 
+<Step title="(Optional) Further Enrich Using Textual Documents">
+<img src="https://static.premai.io/prem-saas-docs/guides/datasets/enrich-from-files.gif" alt="GIF of moving synthetic datapoints to training bucket" />
+
+You can optionally upload additional textual sources — such as **PDFs, TXT files, or HTML pages** — to provide contextual grounding for enrichment.
+
+These documents (e.g. product manuals, help center articles, policy pages) are used alongside your **seed datapoints** to generate more realistic and context-aware synthetic QA pairs.
+
+<Info>
+When documents are provided, the enrichment engine combines both seed examples and content from your uploaded files to create new, high-quality datapoints that better reflect your domain language and topics.
+</Info>
+
+This step is useful if you have internal documentation or unstructured content that the model can learn from.
+</Step>
 </Steps>
 
 Once enrichment is complete, your dataset will contain both original and synthetic entries — ready to be used for model fine-tuning.
@@ -97,8 +110,8 @@ Once enrichment is complete, your dataset will contain both original and synthet
 ## 📊 Dataset Size: Before vs After
 
 Started with 50 original examples.
-	•	Split: 25 training / 25 validation
-	•	After enrichment: +500 synthetic datapoints → 550 total (525 in training + 25 in validation)
+- Split: 25 training / 25 validation
+- After enrichment: +500 synthetic datapoints → 550 total (525 in training + 25 in validation)
 
 
 ## 📦 What’s Next?
