@@ -28,6 +28,14 @@
             ]
           },
           {
+            "group": "Projects 🚀",
+            "pages": [
+              "projects/overview",
+              "projects/get-started",
+              "projects/best-practices"
+            ]
+          },
+          {
             "group": "Datasets 🗃️",
             "pages": [
               "datasets/overview",
