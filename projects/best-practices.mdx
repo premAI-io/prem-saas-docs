@@ -119,36 +119,37 @@ This guide shares proven strategies and best practices for maximizing the succes
 | **Code Generation** | 200-400 examples | 800-1500 examples | Various programming patterns |
 | **Domain Expertise** | 500-1000 examples | 1500-3000 examples | Complex domain knowledge |
 
-### Synthetic Data Generation Optimization
+### Dataset Source Strategy
 
-#### Advanced Settings Configuration
+<Steps>
+  <Step title="Assess Your Data Readiness">
+    **Ask yourself**: Do you have a prepared JSONL dataset?
 
-```text
-Rules & Constraints (Example for Technical Documentation):
-- Generate questions that require multi-step reasoning
-- Include both conceptual and practical implementation questions
-- Ensure answers include code examples where relevant
-- Maintain technical accuracy and use proper terminology
-- Create questions of varying difficulty levels
-```
+    **Choose "Yes" if you have**:
+    - Properly formatted JSONL files
+    - Quality-assured conversation examples
+    - Domain-specific training data already prepared
 
-```text
-Question Format Template:
-Context: {EXTRACTED_TEXT}
+    **Choose "No" if you need**:
+    - To convert documents/content into training data
+    - Help with dataset creation from scratch
+    - Synthetic generation from your content sources
+  </Step>
 
-Generate a technical question that tests understanding of the concepts presented.
-Focus on practical application and real-world scenarios.
-Question difficulty: [Beginner/Intermediate/Advanced]
-```
+  <Step title="Optimize Synthetic Data Generation">
+    **When generating synthetic data, focus on**:
 
-```text
-Answer Format Template:
-Provide a comprehensive answer that includes:
-1. Brief explanation of the concept
-2. Step-by-step implementation (if applicable)
-3. Code example (if relevant)
-4. Common pitfalls or considerations
-```
+    **Content Quality**:
+    - Use high-quality source materials (recent, accurate, comprehensive)
+    - Combine multiple source types for diversity
+    - Review generated content before finalizing
+
+    **Generation Settings**:
+    - Start with 50-100 QA pairs per source for testing
+    - Use moderate creativity levels (30-50) for balanced outputs
+    - Provide clear generation guidelines and constraints
+  </Step>
+</Steps>
 
 #### Creativity Level Guidelines
 
@@ -163,71 +164,53 @@ Provide a comprehensive answer that includes:
 
 ## ⚙️ Fine-tuning Optimization
 
-### Learning Rate Strategy
+### Leveraging Automated Analysis
 
-<CardGroup cols={2}>
-  <Card title="Conservative Approach (Recommended)" icon="shield">
-    **Learning Rate**: 1e-5 to 5e-5
+<Steps>
+  <Step title="Trust the Dataset Analysis">
+    **Let the system analyze your data**:
+    - Data quality assessment identifies potential issues
+    - Content analysis reveals patterns and complexity
+    - Automatic parameter recommendations based on your specific dataset
 
-    **Best For**: Production models, critical applications
+    **Why this matters**: Manual parameter tuning often leads to suboptimal results. The automated analysis considers factors you might miss.
+  </Step>
 
-    **Result**: Stable training, consistent results
-  </Card>
-  <Card title="Aggressive Approach" icon="zap">
-    **Learning Rate**: 1e-4 to 5e-4
+  <Step title="Choose Experiments Wisely">
+    **The system returns multiple experiment configurations**:
+    - **Conservative**: Stable training, lower risk of overfitting
+    - **Balanced**: Good performance with reasonable training time
+    - **Aggressive**: Faster convergence, higher risk but potentially better results
 
-    **Best For**: Experimentation, tight deadlines
+    **Best Practice**: Run 2-3 experiments in parallel to compare approaches.
+  </Step>
 
-    **Result**: Faster convergence, higher risk of instability
-  </Card>
-</CardGroup>
+  <Step title="Monitor Experiment Results">
+    **Track key indicators**:
+    - **Training Loss**: Should decrease steadily
+    - **Validation Loss**: Should follow training loss trends
+    - **Resource Usage**: Ensure efficient GPU utilization
+    - **Time to Completion**: Balance training time with performance gains
+  </Step>
+</Steps>
 
-### Epoch Configuration
-
-```text
-📈 Training Progress Guidelines:
-
-Epochs 1-3:   Model learns basic patterns
-Epochs 4-6:   Performance stabilizes
-Epochs 7-10:  Diminishing returns begin
-Epochs 10+:   Risk of overfitting increases
-
-🎯 Sweet Spot: 5-8 epochs for most use cases
-```
-
-### Monitoring Training Health
+### Understanding Experiment Outcomes
 
 <AccordionGroup>
-  <Accordion title="Healthy Training Signals">
-    **Look for**:
-    - Steady decrease in training loss
-    - Validation loss following similar trend
-    - No sudden spikes or plateaus
-    - Training and validation loss converging
-
-    ```text
-    ✅ Good Training Pattern:
-    Epoch 1: Train Loss: 2.1, Val Loss: 2.2
-    Epoch 2: Train Loss: 1.8, Val Loss: 1.9
-    Epoch 3: Train Loss: 1.5, Val Loss: 1.6
-    Epoch 4: Train Loss: 1.3, Val Loss: 1.4
-    ```
+  <Accordion title="Successful Training Patterns">
+    **Look for these positive indicators**:
+    - Steady loss reduction across epochs
+    - Training and validation loss moving together
+    - No sudden spikes or erratic behavior
+    - Convergence within expected timeframes
   </Accordion>
 
-  <Accordion title="Warning Signs">
-    **Red flags**:
-    - Training loss decreases but validation loss increases (overfitting)
-    - Both losses plateau early (underfitting or poor data)
-    - Erratic loss patterns (learning rate too high)
-    - Validation loss much higher than training loss
-
-    ```text
-    ❌ Overfitting Pattern:
-    Epoch 1: Train Loss: 2.1, Val Loss: 2.2
-    Epoch 2: Train Loss: 1.2, Val Loss: 1.9
-    Epoch 3: Train Loss: 0.8, Val Loss: 2.1
-    Epoch 4: Train Loss: 0.5, Val Loss: 2.4
-    ```
+  <Accordion title="Warning Signs to Address">
+    **Red flags that need attention**:
+    - Training loss decreases while validation loss increases (overfitting)
+    - Both losses plateau early (insufficient data or poor quality)
+    - Erratic loss patterns (unstable training configuration)
+    - Extremely long training times without improvement
   </Accordion>
 </AccordionGroup>
 
@@ -235,49 +218,36 @@ Epochs 10+:   Risk of overfitting increases
 
 ## 📈 Evaluation Excellence
 
-### Comprehensive Evaluation Strategy
+### Strategic Evaluation Approach
 
-<img src="https://static.premai.io/prem-saas-docs/projects/evaluation-strategy.png" alt="Multi-layered evaluation approach diagram" />
+<Steps>
+  <Step title="Baseline Comparison Strategy">
+    **Always include baseline models in your evaluation**:
+    - **Base Models**: Test against GPT-4, Claude, or other leading models
+    - **Performance Goals**: Understand if fine-tuning actually improved performance
+    - **Cost vs. Performance**: Determine if fine-tuned models justify the training cost
 
-#### Layer 1: Automated Metrics
+    **Why this matters**: Fine-tuning should provide measurable improvements over base models for your specific use case.
+  </Step>
 
-```text
-✅ Essential Metrics:
-- Accuracy: Overall correctness
-- Relevance: Answer appropriateness
-- Consistency: Response reliability across similar inputs
-- Latency: Response time performance
-```
+  <Step title="Multi-Model Evaluation">
+    **Evaluate multiple fine-tuned models simultaneously**:
+    - Compare different experiment configurations
+    - Test various training approaches
+    - Identify the best-performing model for your needs
 
-#### Layer 2: Domain-Specific Metrics
+    **Best Practice**: Use the same metrics across all models for fair comparison.
+  </Step>
 
-<CardGroup cols={2}>
-  <Card title="Customer Support" icon="headset">
-    - **Resolution Rate**: Issues solved in first response
-    - **Tone Appropriateness**: Professional and empathetic language
-    - **Policy Compliance**: Adherence to company guidelines
-  </Card>
-  <Card title="Code Generation" icon="code">
-    - **Syntax Accuracy**: Code compiles/runs without errors
-    - **Best Practices**: Follows coding standards
-    - **Security**: No vulnerable patterns
-  </Card>
-</CardGroup>
+  <Step title="Actionable Results Analysis">
+    **Focus on actionable insights**:
+    - **Identify Failure Patterns**: Where do models consistently struggle?
+    - **Performance Gaps**: Which metrics show the biggest room for improvement?
+    - **Dataset Insights**: What training data could address weaknesses?
 
-#### Layer 3: Human Evaluation
-
-```text
-Sample Size Guidelines:
-- Small projects: 20-50 responses
-- Medium projects: 100-200 responses
-- Large projects: 300-500 responses
-
-Evaluation Criteria:
-1. Factual accuracy (1-5 scale)
-2. Helpfulness (1-5 scale)
-3. Clarity (1-5 scale)
-4. Overall quality (1-5 scale)
-```
+    **Use results to guide iteration**: Poor performance indicates areas for dataset enhancement or metric refinement.
+  </Step>
+</Steps>
 
 ### A/B Testing Your Models
 
@@ -417,48 +387,77 @@ Evaluation Criteria:
 
 ---
 
-## 🚀 Iteration & Improvement
+## 🚀 Mastering Project Iteration
 
-### The Continuous Improvement Loop
+### Understanding Project Loops
 
-<img src="https://static.premai.io/prem-saas-docs/projects/improvement-loop.png" alt="Continuous improvement cycle" />
+Projects are designed for **continuous improvement**, not one-time completion. Each component feeds back into the others:
 
 <Steps>
-  <Step title="Performance Analysis">
-    **Weekly Review Checklist**:
-    - ✅ Accuracy metrics trending upward?
-    - ✅ User satisfaction scores stable?
-    - ✅ Any recurring failure patterns?
-    - ✅ New use cases emerging?
-    - ✅ Competitive landscape changes?
+  <Step title="Dataset Expansion Loop">
+    **When evaluation reveals weaknesses**:
+    - Identify specific failure patterns in evaluation results
+    - Add targeted training examples to address gaps
+    - Create new dataset snapshots with enhanced data
+    - Re-run fine-tuning with improved datasets
+
+    **Example**: If your customer support model struggles with technical queries, add more technical Q&A pairs to your dataset.
   </Step>
 
-  <Step title="Identify Data Gaps">
-    **Common gap types**:
-    - **Topic Coverage**: Missing domain areas
-    - **Complexity Levels**: Too simple or too complex examples
-    - **Edge Cases**: Unusual but valid scenarios
-    - **User Patterns**: New ways users interact with your model
+  <Step title="Fine-tuning Experimentation Loop">
+    **Try different training approaches**:
+    - Run multiple experiments with different configurations
+    - Test various base models for your use case
+    - Experiment with different training strategies
+    - Compare results to find optimal approaches
+
+    **Best Practice**: Keep detailed notes on what works and what doesn't for future iterations.
   </Step>
 
-  <Step title="Strategic Data Addition">
-    **Prioritize new data by**:
-    1. **Impact**: Addresses most common failures
-    2. **Frequency**: Covers high-volume use cases
-    3. **Business Value**: Aligns with strategic goals
-    4. **Data Quality**: High-confidence examples available
+  <Step title="Metrics Refinement Loop">
+    **Evolve your evaluation criteria**:
+    - Add new metrics as you discover important behaviors
+    - Refine existing metrics based on real-world feedback
+    - Create domain-specific metrics for edge cases
+    - Update scoring criteria as requirements change
   </Step>
 
-  <Step title="Model Versioning">
-    **Version Naming Convention**: `[project-name]-v[major].[minor].[patch]`
-
-    **Examples**:
-    - customer-support-v1.0.0 (initial release)
-    - customer-support-v1.1.0 (feature addition)
-    - customer-support-v1.1.1 (bug fix)
-    - customer-support-v2.0.0 (major overhaul)
+  <Step title="Continuous Evaluation Loop">
+    **Regularly assess model performance**:
+    - Apply updated metrics to existing models
+    - Compare new fine-tuned models against established baselines
+    - Track performance trends over time
+    - Identify when models need refreshing or replacement
   </Step>
 </Steps>
+
+### Strategic Iteration Planning
+
+<AccordionGroup>
+  <Accordion title="Weekly Performance Reviews">
+    **Key Questions to Ask**:
+    - Are accuracy metrics trending upward?
+    - What new failure patterns have emerged?
+    - Which use cases need better coverage?
+    - How do costs compare to performance gains?
+  </Accordion>
+
+  <Accordion title="Monthly Enhancement Planning">
+    **Focus Areas for Improvement**:
+    - **Dataset Quality**: Add high-value training examples
+    - **Model Performance**: Test new base models or configurations
+    - **Evaluation Depth**: Develop more nuanced metrics
+    - **Operational Efficiency**: Optimize costs and response times
+  </Accordion>
+
+  <Accordion title="Quarterly Strategic Assessment">
+    **Big Picture Evaluation**:
+    - Overall project ROI and business impact
+    - Competitive landscape changes
+    - Technology stack updates and migrations
+    - Long-term model sustainability planning
+  </Accordion>
+</AccordionGroup>
 
 ### Performance Optimization Techniques
 

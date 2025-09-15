@@ -7,51 +7,37 @@ description: Create your first AI development project and learn the complete wor
 
 Projects provide a guided, end-to-end workflow for AI model development. This guide walks you through creating a complete project from start to finish.
 
-<img src="https://static.premai.io/prem-saas-docs/projects/project-setup-flow.png" alt="Project Setup Flow" />
-
 ## Step 1: General Setup
 
 <Steps>
   <Step title="Navigate to Projects">
     From the main dashboard, click **Projects** in the left sidebar, then click **+ Create Project**.
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/navigate-to-projects.gif" alt="GIF showing navigation to Projects section" />
+    <img src="https://static.premai.io/prem-saas-docs/projects/get-started/create-project.gif" alt="GIF showing navigation to Projects section" />
   </Step>
 
   <Step title="Configure Project Basics">
     **Project Name**: Choose a descriptive name that reflects your use case
 
-    **Description** (Optional): Add context about your project goals
+    **Project Goals**: Add context about your project goals
 
-    **Base Model**: Select the foundation model you want to fine-tune
+    **Follow-up Questions**: Answer some questions about your project
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/general-setup.png" alt="Project general setup configuration" />
-
-    <Tip>
-      Choose your base model carefully - it significantly impacts training time, cost, and final performance.
-    </Tip>
   </Step>
 </Steps>
 
-## Step 2: Dataset Creation
+## Step 2: Create and Handle Dataset
 
 You have **two paths** for dataset creation. Choose the one that fits your situation:
 
 ### Path A: Upload Existing JSONL Dataset
+Upload your existing dataset in JSONL format.
 
 <Steps>
-  <Step title="Select Upload Option">
-    In the **Create Dataset** section, choose **Upload Existing Dataset**.
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/dataset-upload-option.png" alt="Dataset upload option selection" />
-  </Step>
-
   <Step title="Upload Your JSONL File">
     - **Dataset Name**: Enter a descriptive name
     - **Upload File**: Select your properly formatted JSONL file
     - **Validation**: The system will automatically validate your dataset format
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/upload-jsonl-dataset.gif" alt="JSONL dataset upload process" />
 
     <Note>
       Need help with JSONL format? See our [Datasets Overview](/datasets/overview) for detailed formatting requirements.
@@ -60,16 +46,11 @@ You have **two paths** for dataset creation. Choose the one that fits your situa
 </Steps>
 
 ### Path B: Generate Synthetic Dataset
+Generate synthetic dataset from your content (PDFs, web pages, youtube videos)
 
 <Steps>
-  <Step title="Select Synthetic Generation">
-    In the **Create Dataset** section, choose **Generate Synthetic Dataset**.
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/synthetic-option.png" alt="Synthetic dataset generation option" />
-  </Step>
-
   <Step title="Choose Data Sources">
-    Select your input sources:
+    Select your input sources for synthetic dataset generation:
     - **Files**: PDF, DOCX, TXT, HTML, PPTX
     - **YouTube Videos**: Individual videos or playlists
     - **Web URLs**: Website content extraction
@@ -77,7 +58,6 @@ You have **two paths** for dataset creation. Choose the one that fits your situa
 
     **QA Pairs per Source**: Set how many question-answer pairs to generate from each input
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/synthetic-sources.gif" alt="Selecting synthetic data sources" />
   </Step>
 
   <Step title="Configure Advanced Settings (Optional)">
@@ -91,19 +71,19 @@ You have **two paths** for dataset creation. Choose the one that fits your situa
 
     **Question Format**: Guide question structure
     ```text
-    Generate questions that test understanding of [TOPIC] using the context provided.
-    Focus on practical applications and real-world scenarios.
+    Summarize the blog post titles {blog_title} in 5 bullet points.
+    {blog_post}
     ```
 
     **Answer Format**: Define expected answer style
     ```text
-    Provide detailed, step-by-step answers with examples where applicable.
-    Include code snippets or specific instructions when relevant.
+    {bullet_list}
     ```
+
+    You can also provide QA Examples to better steer the synthetic data generation.
 
     **Creativity Level**: Adjust generation diversity (0-100)
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/synthetic-advanced.png" alt="Advanced synthetic generation settings" />
 
     <Tip>
       For structured outputs (like JSON extraction), set creativity to 0. For conversational models, use 30-50.
@@ -118,123 +98,87 @@ You have **two paths** for dataset creation. Choose the one that fits your situa
 
     Click **Generate Dataset** to start the process.
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/synthetic-review.png" alt="Synthetic generation review and confirmation" />
+    <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/synthetic-gen/step-3-summary.png" alt="Synthetic generation review and confirmation" />
   </Step>
 </Steps>
 
-## Step 3: Dataset Creation Progress
-
-Monitor your dataset creation in real-time:
-
-<img src="https://static.premai.io/prem-saas-docs/projects/dataset-progress.gif" alt="Dataset creation progress monitoring" />
-
-- **Processing Status**: See which files are being processed
-- **Generation Progress**: Track QA pair creation
-- **Estimated Completion**: Time remaining for generation
-- **Cost Tracking**: Monitor usage costs
-
-<Note>
-  Dataset generation typically takes 2-5 minutes per input source, depending on size and complexity.
-</Note>
-
-## Step 4: Review and Refine Dataset
-
-Once generation completes, review your dataset:
+Regardless of which path you chose (upload or synthetic generation), you need to create a snapshot:
 
 <Steps>
-  <Step title="Preview Generated Data">
-    Browse through the generated QA pairs to ensure quality and relevance.
+  <Step title="Overview Dataset">
+    Browse through the QA pairs inside the dataset to ensure quality and relevance.
 
     <img src="https://static.premai.io/prem-saas-docs/projects/dataset-preview.png" alt="Dataset preview and review interface" />
   </Step>
-
-  <Step title="Edit or Remove Entries (Optional)">
-    - **Edit**: Modify questions or answers for better accuracy
-    - **Delete**: Remove low-quality or irrelevant pairs
-    - **Add**: Manually add additional QA pairs if needed
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/dataset-editing.gif" alt="Editing dataset entries" />
+  <Step>
+    Autosplit the dataset into training and validation split. If you find challenging QA pairs that could be a good test case during evaluation, manually select them and place them in validation set.
   </Step>
+  <Step title="Create Snapshot">
+    Create a snapshot of your dataset for fine-tuning:
+    - **Snapshot Name**: Give it a descriptive name
+    - Click **Create Snapshot** to finalize
 
-  <Step title="Create Dataset Snapshot">
-    Click **Create Snapshot** to save the final version for fine-tuning.
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/create-snapshot.png" alt="Creating dataset snapshot" />
-
-    <Warning>
-      Always create a snapshot before proceeding to fine-tuning. This preserves your dataset state and enables reproducibility.
-    </Warning>
+    <Tip>
+      Give a descriptive name to the snapshot, useful for versioning and easier experiment tracking.
+    </Tip>
   </Step>
 </Steps>
 
-## Step 5: Fine-tune Your Model
-
-With your dataset ready, proceed to model fine-tuning:
+## Step 3: Fine-tune Your Model
 
 <Steps>
-  <Step title="Configure Fine-tuning Parameters">
-    **Training Configuration**:
-    - **Learning Rate**: Start with recommended defaults
-    - **Batch Size**: Adjust based on dataset size
-    - **Epochs**: Number of training iterations
-    - **Validation Split**: Percentage for validation (typically 10-20%)
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/finetuning-config.png" alt="Fine-tuning configuration settings" />
+  <Step title="Create New Fine-tuning Job">
+    Start by creating a fine-tuning job:
+    - **Job Name**: Give your fine-tuning job a descriptive name
+    - **Select Model Type**: Choose the type of model finetuning you want to apply between reasoning and non reasoning.
   </Step>
 
-  <Step title="Start Fine-tuning Job">
-    Review your configuration and start the training process.
+  <Step title="Dataset Analysis">
+    The system will analyze your dataset automatically:
+    - **Data Quality Assessment**: Checks for formatting and consistency
+    - **Content Analysis**: Analyzes patterns and complexity
+    - **Recommendations**: Suggests optimal training models and parameters
 
-    **Estimated Duration**: Based on dataset size and model complexity
-    **Cost Estimate**: Training costs and resource usage
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/start-finetuning.gif" alt="Starting the fine-tuning process" />
+    <Note>
+      This analysis typically takes 2-5 minutes and helps optimize your training configuration.
+    </Note>
   </Step>
 
-  <Step title="Monitor Training Progress">
-    Track your model's training in real-time:
-    - **Loss Curves**: Training and validation loss over time
-    - **Performance Metrics**: Accuracy and other relevant metrics
-    - **Resource Usage**: GPU utilization and memory consumption
+  <Step title="Configure Experiments">
+    Based on the analysis, the system returns a set of recommended experiments.
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/training-progress.png" alt="Fine-tuning progress monitoring" />
+  </Step>
+
+  <Step title="Run Experiments">
+    Start the fine-tuning process:
+    - **Experiment Selection**: Choose which experiments to run
+    - **Monitor Progress**: Track training progress in real-time
+    - **Compare Results**: View performance across different configurations
+
+    <Note>
+      Fine-tuning duration varies from 30 minutes to several hours depending on dataset size, model complexity, and chosen parameters.
+    </Note>
   </Step>
 </Steps>
 
-<Note>
-  Fine-tuning duration varies from 30 minutes to several hours depending on dataset size, model complexity, and chosen parameters. For detailed guidance, see our [Fine-tuning Guide](/finetuning/get-started).
-</Note>
-
-## Step 6: Define Metrics
+## Step 4: Define Metrics
 
 Before evaluating your model, define the metrics that will measure success for your specific use case:
 
 <Steps>
   <Step title="Generate Rules">
-    Create evaluation rules that define what constitutes good vs. poor responses for your use case.
+    Describe your evaluation needs and let our AI generate the rules for you.
+    Provide:
+    - **metric name**
+    - **metric description**
 
-    **Examples**:
-    - Technical accuracy for code generation
-    - Tone appropriateness for customer support
-    - Factual correctness for Q&A systems
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/generate-rules.png" alt="Generating evaluation rules" />
+    Our AI will generate a set of **should follow** and **should not follow** rules.
   </Step>
 
   <Step title="Create Custom Metrics">
-    Define specific metrics that align with your business objectives:
+    Accept/Update/Delete the previously generated rules to actually create the metric.
 
-    **Common Metric Types**:
-    - **Accuracy**: Percentage of correct responses
-    - **Relevance**: How well answers address the question
-    - **Consistency**: Similar inputs produce similar outputs
-    - **Safety**: No harmful or inappropriate content
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/create-metrics.png" alt="Creating custom metrics" />
-
-    <Tip>
-      Start with 2-3 key metrics that directly impact your use case. You can always add more later.
-    </Tip>
   </Step>
 </Steps>
 
@@ -242,43 +186,33 @@ Before evaluating your model, define the metrics that will measure success for y
   Well-defined metrics are crucial for meaningful evaluation. Take time to think about what "success" looks like for your specific use case. Learn more in our [Evaluation Metrics Guide](/evaluations/metrics).
 </Note>
 
-## Step 7: Evaluate Your Model
-
-With your metrics defined, evaluate your model's performance:
+## Step 5: Evaluate Your Model
 
 <Steps>
-  <Step title="Choose Evaluation Metrics">
-    Select metrics relevant to your use case:
-    - **Accuracy**: Overall correctness
-    - **Relevance**: Answer appropriateness
-    - **Consistency**: Response reliability
-    - **Custom Metrics**: Domain-specific evaluation criteria
+  <Step title="Choose Metrics">
+    Select the metrics you want to use for evaluation:
+    - **Your Custom Metrics**: The metrics you defined in the previous step
+    - **Available Metrics**: Pre-built metrics from the Prem library
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/evaluation-metrics.png" alt="Selecting evaluation metrics" />
   </Step>
 
-  <Step title="Run Evaluation">
-    Start the evaluation process against your test dataset.
-
-    <img src="https://static.premai.io/prem-saas-docs/projects/run-evaluation.gif" alt="Running model evaluation" />
+  <Step title="Start Evaluation">
+    Begin the evaluation process on the validation split, by using the previously defined metrics.
   </Step>
 
-  <Step title="Review Results">
-    Analyze your model's performance:
-    - **Overall Scores**: Aggregate performance metrics
-    - **Per-Question Analysis**: Detailed breakdown of responses
-    - **Comparison**: Performance vs. base model
-    - **Recommendations**: Suggested improvements
+  <Step title="Review Evaluation Results">
+    Analyze the results to understand model performance:
+    - **Metric Scores**: See how each model performed on each metric
+    - **Detailed Breakdowns**: Examine individual response quality
+    - **Identify Weaknesses**: Find areas where models need improvement
 
-    <img src="https://static.premai.io/prem-saas-docs/projects/evaluation-results.png" alt="Model evaluation results dashboard" />
+    <Note>
+      Evaluation typically takes 5-15 minutes depending on test dataset size. Learn more about evaluation strategies in our [Evaluations Guide](/evaluations/get-started).
+    </Note>
   </Step>
 </Steps>
 
-<Note>
-  Evaluation typically takes 5-15 minutes depending on test dataset size. Learn more about evaluation strategies in our [Evaluations Guide](/evaluations/get-started).
-</Note>
-
-## Step 8: Project Complete
+## Project Complete
 
 Congratulations! Your project is now complete. You have:
 
@@ -299,64 +233,8 @@ Congratulations! Your project is now complete. You have:
   </Card>
 </CardGroup>
 
-<CardGroup cols={2}>
+<CardGroup cols={1}>
   <Card title="Model Experiments" icon="flask" href="/finetuning/experiments">
     Run experiments to further optimize your model.
-  </Card>
-  <Card title="Create Another Project" icon="plus" href="/projects/get-started">
-    Apply what you've learned to new use cases.
-  </Card>
-</CardGroup>
-
----
-
-## Troubleshooting Common Issues
-
-<AccordionGroup>
-  <Accordion title="Dataset Generation Failed">
-    **Possible causes:**
-    - Invalid input file formats
-    - Files too large or corrupted
-    - Network issues with URL sources
-
-    **Solutions:**
-    - Verify file formats are supported
-    - Check file size limits (max 50MB per file)
-    - Test URLs manually to ensure accessibility
-  </Accordion>
-
-  <Accordion title="Fine-tuning Taking Too Long">
-    **Possible causes:**
-    - Large dataset size
-    - Complex model architecture
-    - High epoch count
-
-    **Solutions:**
-    - Consider reducing dataset size for initial testing
-    - Lower epoch count for faster iteration
-    - Use smaller base models for experimentation
-  </Accordion>
-
-  <Accordion title="Poor Evaluation Results">
-    **Possible causes:**
-    - Insufficient training data
-    - Low-quality synthetic data
-    - Inappropriate base model selection
-
-    **Solutions:**
-    - Review and clean your dataset
-    - Add more diverse training examples
-    - Try a different base model better suited for your task
-  </Accordion>
-</AccordionGroup>
-
-## Need Help?
-
-<CardGroup cols={2}>
-  <Card title="Best Practices" icon="lightbulb" href="/projects/best-practices">
-    Learn optimization tips and proven workflows.
-  </Card>
-  <Card title="Community Support" icon="discord" href="https://discord.gg/tWwg9RSCXJ">
-    Get help from the Prem community.
   </Card>
 </CardGroup>

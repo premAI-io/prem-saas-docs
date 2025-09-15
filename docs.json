@@ -31,8 +31,7 @@
             "group": "Projects 🚀",
             "pages": [
               "projects/overview",
-              "projects/get-started",
-              "projects/best-practices"
+              "projects/get-started"
             ]
           },
           {
