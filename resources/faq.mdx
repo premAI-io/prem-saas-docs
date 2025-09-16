@@ -16,10 +16,24 @@ With Prem, you can:
 - Monitor your models' performance over time with Stats
 
 ### How do I get started with Prem?
-You can get started by following our [Quick Start Guide](/get-started/quick-start) which will walk you through creating your first custom AI model in minutes.
+The best way to start is by creating your first [Project](/projects/get-started), which guides you through the complete AI development workflow from dataset creation to model evaluation. Alternatively, you can follow our [Quick Start Guide](/get-started/quick-start) for a direct approach.
 
 ### Does Prem require machine learning expertise?
 No, Prem is designed to be accessible to users without machine learning expertise. Our Autonomous Fine-Tuning feature handles the complexities of model training for you.
+
+### What are Projects and why should I use them?
+Projects provide a guided, end-to-end workflow that orchestrates your entire AI development process. They're especially useful for beginners as they connect dataset creation, fine-tuning, and evaluation into a single, streamlined experience. Learn more in our [Projects Overview](/projects/overview).
+
+## Projects
+
+### Do I need to prepare data before creating a Project?
+No! Projects support two approaches: you can upload existing JSONL datasets if you have them, or generate synthetic datasets directly from various sources like PDFs, websites, and documents. This flexibility makes Projects perfect for any starting point.
+
+### What types of files can I use to generate synthetic datasets?
+Projects can generate datasets from PDF, DOCX, TXT, HTML, PPTX files, YouTube videos, website URLs, or any combination of these sources. The platform automatically extracts content and creates question-answer pairs for training.
+
+### How long does a complete Project take?
+A typical Project takes 1-3 hours total: dataset generation (10-30 minutes), fine-tuning (30 minutes to 2 hours), and evaluation (5-15 minutes). The exact time depends on your dataset size and model complexity.
 
 ## Datasets
 
@@ -33,10 +47,16 @@ Each conversation in your dataset should include three roles:
 - "assistant": Contains the ideal response you want the model to learn
 
 ### How do I create a dataset in Prem?
-You can follow our [Get Started with Datasets](/datasets/get-started) guide to learn how to create and format datasets properly.
+You have two main options: upload an existing JSONL file or generate a synthetic dataset from various sources (PDFs, websites, videos). The easiest way is through [Projects](/projects/get-started), or you can create standalone datasets following our [Get Started with Datasets](/datasets/get-started) guide.
 
-### Can I enrich my dataset?
-Yes, Prem offers dataset enrichment capabilities. You can learn more about this in our [Enrich Dataset](/datasets/enrich-dataset) documentation.
+### Can I create datasets without existing training data?
+Yes! Prem's synthetic data generation can create high-quality datasets from raw content like PDFs, documents, websites, and videos. This is perfect when you have domain knowledge but no formatted training data. See our [Synthetic Data Guide](/guides/datasets/synthetic-data) for details.
+
+### Can I enrich my existing dataset?
+Yes, Prem offers dataset enrichment to add synthetic data to existing datasets, helping you expand coverage and improve model performance. Learn more in our [Enrich Dataset](/datasets/enrich-dataset) documentation.
+
+### How much data do I need for a good dataset?
+Quality matters more than quantity. For most use cases, 100-500 high-quality examples work well, though complex domains may need 1000+ examples. Projects help you generate the right amount of data for your specific use case.
 
 ### What is a dataset snapshot?
 A snapshot is a fixed version of your dataset that can be used for fine-tuning. Creating snapshots allows you to preserve specific versions of your dataset for training or comparison purposes. Learn more in the [Create Snapshot](/datasets/create-snapshot) guide.
@@ -60,8 +80,10 @@ The basic process involves:
 2. Fine-tuning your selected model on this dataset snapshot
 3. Evaluating the resulting model to verify performance
 
+For the complete guided experience, use [Projects](/projects/overview) which automates this entire workflow.
+
 ### How long does fine-tuning take?
-Fine-tuning duration depends on your dataset size and the model you're using. Typically, the process can take anywhere from minutes to a few hours.
+Fine-tuning duration depends on your dataset size and the model you're using. Typically, the process can take anywhere from 30 minutes to a few hours. Projects provide real-time progress tracking so you know exactly when your model will be ready.
 
 ## Evaluations
 

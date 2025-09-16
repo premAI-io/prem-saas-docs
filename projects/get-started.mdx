@@ -1,0 +1,238 @@
+---
+title: Get Started with Projects
+description: Create your first AI development project and learn the complete workflow from dataset creation to model evaluation.
+---
+
+# Creating Your First Project
+
+Projects provide a guided, end-to-end workflow for AI model development. This guide walks you through creating a complete project from start to finish.
+
+## Step 1: General Setup
+
+<Steps>
+  <Step title="Navigate to Projects">
+    From the main dashboard, click **Projects** in the left sidebar, then click **+ Create Project**.
+
+    <img src="https://static.premai.io/prem-saas-docs/projects/get-started/create-project.gif" alt="GIF showing navigation to Projects section" />
+  </Step>
+
+  <Step title="Configure Project Basics">
+    **Project Name**: Choose a descriptive name that reflects your use case
+
+    **Project Goals**: Add context about your project goals
+
+    **Follow-up Questions**: Answer some questions about your project
+
+  </Step>
+</Steps>
+
+## Step 2: Create and Handle Dataset
+
+You have **two paths** for dataset creation. Choose the one that fits your situation:
+
+### Path A: Upload Existing JSONL Dataset
+Upload your existing dataset in JSONL format.
+
+<Steps>
+  <Step title="Upload Your JSONL File">
+    - **Dataset Name**: Enter a descriptive name
+    - **Upload File**: Select your properly formatted JSONL file
+    - **Validation**: The system will automatically validate your dataset format
+
+    <Note>
+      Need help with JSONL format? See our [Datasets Overview](/datasets/overview) for detailed formatting requirements.
+    </Note>
+  </Step>
+</Steps>
+
+### Path B: Generate Synthetic Dataset
+Generate synthetic dataset from your content (PDFs, web pages, youtube videos)
+
+<Steps>
+  <Step title="Choose Data Sources">
+    Select your input sources for synthetic dataset generation:
+    - **Files**: PDF, DOCX, TXT, HTML, PPTX
+    - **YouTube Videos**: Individual videos or playlists
+    - **Web URLs**: Website content extraction
+    - **Mixed Sources**: Combine multiple input types
+
+    **QA Pairs per Source**: Set how many question-answer pairs to generate from each input
+
+  </Step>
+
+  <Step title="Configure Advanced Settings (Optional)">
+    **Rules & Constraints**: Define generation requirements
+    ```text
+    - Focus on technical accuracy
+    - Use domain-specific terminology
+    - Maintain consistent formatting
+    - Generate questions of varying complexity
+    ```
+
+    **Question Format**: Guide question structure
+    ```text
+    Summarize the blog post titles {blog_title} in 5 bullet points.
+    {blog_post}
+    ```
+
+    **Answer Format**: Define expected answer style
+    ```text
+    {bullet_list}
+    ```
+
+    You can also provide QA Examples to better steer the synthetic data generation.
+
+    **Creativity Level**: Adjust generation diversity (0-100)
+
+
+    <Tip>
+      For structured outputs (like JSON extraction), set creativity to 0. For conversational models, use 30-50.
+    </Tip>
+  </Step>
+
+  <Step title="Review and Generate">
+    Review your configuration summary:
+    - Data sources and expected output count
+    - Generation settings and estimated cost
+    Click **Generate Dataset** to start the process.
+
+    <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/synthetic-gen/step-3-summary.png" alt="Synthetic generation review and confirmation" />
+  </Step>
+</Steps>
+
+### Snapshot Creation
+Regardless of which path you chose (upload or synthetic generation), you need to create a snapshot:
+
+<Steps>
+  <Step title="Overview Dataset">
+    Browse through the QA pairs inside the dataset to ensure quality and relevance.
+
+  </Step>
+  <Step>
+    Autosplit the dataset into training and validation split. If you find challenging QA pairs that could be a good test case during evaluation, manually select them and place them in validation set.
+  </Step>
+  <Step title="Create Snapshot">
+    Create a snapshot of your dataset for fine-tuning:
+    - **Snapshot Name**: Give it a descriptive name
+    - Click **Create Snapshot** to finalize
+
+
+    <Tip>
+      Give a descriptive name to the snapshot, useful for versioning and easier experiment tracking.
+    </Tip>
+  </Step>
+</Steps>
+
+## Step 3: Fine-tune Your Model
+
+<Steps>
+  <Step title="Create New Fine-tuning Job">
+    Start by creating a fine-tuning job:
+    - **Job Name**: Give your fine-tuning job a descriptive name
+    - **Select Model Type**: Choose the type of model finetuning you want to apply between reasoning and non reasoning.
+  </Step>
+
+  <Step title="Dataset Analysis">
+    The system will analyze your dataset automatically:
+    - **Data Quality Assessment**: Checks for formatting and consistency
+    - **Content Analysis**: Analyzes patterns and complexity
+    - **Recommendations**: Suggests optimal training models and parameters
+
+    <Note>
+      This analysis typically takes 2-5 minutes and helps optimize your training configuration.
+    </Note>
+  </Step>
+
+  <Step title="Configure Experiments">
+    Based on the analysis, the system returns a set of recommended experiments.
+
+  </Step>
+
+  <Step title="Run Experiments">
+    Start the fine-tuning process:
+    - **Experiment Selection**: Choose which experiments to run
+    - **Monitor Progress**: Track training progress in real-time
+    - **Compare Results**: View performance across different configurations
+
+    <Note>
+      Fine-tuning duration varies from 30 minutes to several hours depending on dataset size, model complexity, and chosen parameters.
+    </Note>
+  </Step>
+</Steps>
+
+## Step 4: Define Metrics
+
+Before evaluating your model, define the metrics that will measure success for your specific use case:
+
+<Steps>
+  <Step title="Generate Rules">
+    Describe your evaluation needs and let our AI generate the rules for you.
+    Provide:
+    - **metric name**
+    - **metric description**
+
+    Our AI will generate a set of **should follow** and **should not follow** rules.
+  </Step>
+
+  <Step title="Create Custom Metrics">
+    Accept/Update/Delete the previously generated rules to actually create the metric.
+
+  </Step>
+</Steps>
+
+<Note>
+  Well-defined metrics are crucial for meaningful evaluation. Take time to think about what "success" looks like for your specific use case. Learn more in our [Evaluation Metrics Guide](/evaluations/metrics).
+</Note>
+
+## Step 5: Evaluate Your Model
+
+<Steps>
+  <Step title="Choose Metrics">
+    Select the metrics you want to use for evaluation:
+    - **Your Custom Metrics**: The metrics you defined in the previous step
+    - **Available Metrics**: Pre-built metrics from the Prem library
+
+  </Step>
+
+  <Step title="Start Evaluation">
+    Begin the evaluation process on the validation split, by using the previously defined metrics.
+  </Step>
+
+  <Step title="Review Evaluation Results">
+    Analyze the results to understand model performance:
+    - **Metric Scores**: See how each model performed on each metric
+    - **Detailed Breakdowns**: Examine individual response quality
+    - **Identify Weaknesses**: Find areas where models need improvement
+
+    <Note>
+      Evaluation typically takes 5-15 minutes depending on test dataset size. Learn more about evaluation strategies in our [Evaluations Guide](/evaluations/get-started).
+    </Note>
+  </Step>
+</Steps>
+
+## Project Complete
+
+Congratulations! Your project is now complete. You have:
+
+- ✅ **Created or uploaded a quality dataset**
+- ✅ **Successfully fine-tuned your model**
+- ✅ **Defined custom metrics for your use case**
+- ✅ **Validated performance through evaluation**
+- ✅ **Generated a production-ready AI model**
+
+### Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Deploy Your Model" icon="rocket" href="/inference/self-host">
+    Learn how to deploy your fine-tuned model for production use.
+  </Card>
+  <Card title="API Integration" icon="code" href="/api-reference/introduction">
+    Integrate your model into applications using our API.
+  </Card>
+</CardGroup>
+
+<CardGroup cols={1}>
+  <Card title="Model Experiments" icon="flask" href="/finetuning/experiments">
+    Run experiments to further optimize your model.
+  </Card>
+</CardGroup>

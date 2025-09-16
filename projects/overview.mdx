@@ -1,0 +1,102 @@
+---
+title: Projects Overview
+description: Streamline your AI development workflow with end-to-end project orchestration in Prem Studio.
+---
+
+<Note>
+  Check out the [Get Started](/projects/get-started) guide to create your first project and see the complete workflow in action.
+</Note>
+
+
+
+## What are Projects?
+
+Projects in Prem Studio are your **orchestration hub** for end-to-end AI model development. Instead of managing datasets, fine-tuning jobs, and evaluations separately, Projects provide a **guided workflow** that connects all these components into a cohesive development pipeline.
+
+Think of Projects as your **AI development roadmap** — they guide you from raw data to a production-ready, evaluated model through a structured, step-by-step process.
+
+## The Complete Project Workflow
+
+Project Workflow: Project Setup → Dataset Creation → Fine-tuning → Metrics -> Evaluation
+
+Every project follows this proven workflow:
+
+<Steps>
+  <Step title="Project Setup">
+    Define your project name and objective.
+
+  </Step>
+
+  <Step title="Dataset Creation">
+    Choose your path:
+    - **Upload existing JSONL** datasets if you already have training data
+    - **Generate synthetic datasets** from PDFs, websites, videos, or other sources
+
+    Learn more: [Datasets Overview](/datasets/overview) | [Synthetic Data Guide](/guides/datasets/synthetic-data)
+  </Step>
+
+  <Step title="Fine-tuning">
+    Train your selected model on your dataset with automated parameter optimization.
+
+    Learn more: [Fine-tuning Overview](/finetuning/overview) | [Get Started with Fine-tuning](/finetuning/get-started)
+  </Step>
+
+  <Step title="Metrics">
+    Define custom evaluation rules and metrics that align with your specific use case and quality standards.
+
+    Learn more: [Evaluation Metrics](/evaluations/metrics) | [Writing Good Metrics](/guides/evaluation/writing-good-metrics)
+  </Step>
+
+  <Step title="Evaluation">
+    Test your fine-tuned model against your defined metrics to validate performance and reliability.
+
+    Learn more: [Evaluations Overview](/evaluations/overview) | [Get Started with Evaluations](/evaluations/get-started)
+  </Step>
+
+  <Step title="Project Complete">
+    Deploy your validated model with confidence, knowing it meets your quality standards.
+  </Step>
+  <Step title="Iteration Loops">
+    Projects are **not one-and-done** — they’re designed for iteration:
+
+    - **Dataset Expansion** → Refine or add new samples when evaluation highlights weaknesses.
+    - **More Fine-tuning Jobs** → Train new models with different parameters or approaches.
+    - **New Metrics** → Add metrics to better evaluate new behaviors.
+    - **Re-evaluation** → Apply the same or updated metrics to compare across models.
+
+  </Step>
+</Steps>
+
+## Why Use Projects?
+
+### Guided Experience
+
+Projects eliminate guesswork by providing a clear, sequential workflow. Perfect for users new to AI development or teams wanting standardized processes.
+
+### Seamless Integration
+
+All components (datasets, fine-tuning, evaluation) work together seamlessly. No need to manually connect outputs from one step to inputs of the next.
+
+
+
+# Next Step: Create a Project
+
+<Card title="Get Started with Projects" icon="rocket" href="/projects/get-started">
+  Create your first AI project with our step-by-step creation guide.
+</Card>
+
+# Deep Dive into Components
+
+While Projects orchestrate the overall workflow, you can learn more about each component:
+
+<CardGroup cols={3}>
+  <Card title="Datasets" icon="database" href="/datasets/overview">
+    Learn about data preparation and synthetic generation.
+  </Card>
+  <Card title="Fine-tuning" icon="robot" href="/finetuning/overview">
+    Understand model training and customization.
+  </Card>
+  <Card title="Evaluations" icon="chart-bar" href="/evaluations/overview">
+    Explore model testing and validation methods.
+  </Card>
+</CardGroup>
