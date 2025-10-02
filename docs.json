@@ -176,6 +176,17 @@
             ]
           }
         ]
+      },
+      {
+        "tab": "Release Notes",
+        "groups": [
+          {
+            "group": "Release Notes",
+            "pages": [
+              "release-notes/release-notes"
+            ]
+          }
+        ]
       }
     ],
     "global": {
