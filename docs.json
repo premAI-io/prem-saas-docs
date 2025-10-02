@@ -145,6 +145,12 @@
         ]
       },
       {
+        "tab": "Release Notes",
+        "pages": [
+          "release-notes/release-notes"
+        ]
+      },
+      {
         "tab": "API Reference",
         "groups": [
           {
