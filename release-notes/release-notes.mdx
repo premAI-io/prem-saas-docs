@@ -3,159 +3,53 @@ title: Release Notes
 icon: rocket
 ---
 
+<Update label="October 2, 2025" description="v0.0.2">
+# v0.0.2
 
+**What's Changed**
+- Show model icons in the model list
+- Enhance navigation with 'Advanced Settings' in the project section
+- Add more desciptinve hints to the project section
 
-<Update label="March 7, 2025" description="v0.3.107">
-# v0.3.107
-
-**Autonomous Fine-tuning**
-- Added the ability to download fine-tuned models weights.
-- Added the ability to download model weights from an AWS s3 url.
-- Improvements to ML service.
-</Update>
-
-
-
-<Update label="February 26, 2025" description="v0.3.102">
-# v0.3.102
-**UI Improvements**
-- Upgraded the UI for the autonomous fine-tuning agent.
-- You can now set a default job name.
-- New tooltips in the autonomous fine-tuning agent.
-- New button to copy the format of the json and jsonl.
-- You can now copy paste to insert a dataset.
-
-**Autonomous Fine-tuning**
-- Added the ability to delete a fine-tuning job.
-- You can now download the default dataset.
-- Update default datasets
+[Full Changelog](https://github.com/premAI-io/sid/releases/tag/0.0.2)
 
 </Update>
 
-<Update label="February 25, 2025" description="v0.3.101">
-# v0.3.101
-- Added support for gemma 2, qwen2.5 and codellama models for fine-tuning and inference.
-- Improved fine-tuning evaluation.
-- Improvements to autonomous fine-tuning.
-- Added system prompt for fine-tuned models.
-- Improvements to fine-tuning start and completion emails.
-- Improvements to login page responsiveness.
-</Update>
+<Update label="September 30, 2025" description="v0.0.1">
+# v0.0.1
 
-<Update label="February 4, 2025" description="v0.3.100">
-# v0.3.100
-- Improvements to data augmentation.
-- The Gym is now Autonomous Fine-tuning.
-</Update>
+🎉 **Initial Release of Prem Studio**
 
+Prem Studio is a platform that simplifies the process of building and deploying specialized AI models. This initial release includes a complete end-to-end workflow:
 
-<Update label="February 3, 2025" description="v0.3.99">
-# v0.3.98
-- Improved logging for creation of user/orginization.
-</Update>
+***Build Datasets 📚***
+- Upload raw documents (PDFs, DOCX files)
+- Use YouTube videos as a source of information
+- Import unstructured text
+- Automatic generation of synthetic data
+- Dataset enrichment and improvement tools
 
-<Update label="January 31, 2025" description="v0.3.97">
-# v0.3.97
-- Added support to upload and fetch files from s3.
-</Update>
+***Fine-tune Models 🧠***
+- Fine-tune popular open-source models using your own data
+- One-click training process
+- AI-powered recommendations for the best base model
+- Automatic optimization of training parameters
+- Support for both full fine-tuning and LoRA
 
-<Update label="January 30, 2025" description="v0.3.96">
-# v0.3.96
-- Improvements to data augmentation.
-</Update>
+***Evaluate Performances 📊***
+- Comprehensive model evaluation tools
+- Compare custom models against base models and closed-source APIs
+- AI-powered judging to score model quality
+- Define custom evaluation metrics
+- Detailed performance analytics
 
+***Instant Deployment 🚀***
+- Secure and scalable endpoint deployment
+- SDK access for easy integration
+- Smart routing capabilities
+- Usage analytics and monitoring
+- OpenAI-compatible API
 
-<Update label="January 29, 2025" description="v0.3.94">
-# v0.3.94
-- Improvements to integrations messaging.
-- Added support for Deepseek-r1-distill-70b model.
-- Added support for Deepseek-r1 model.
-</Update>
+[Full Changelog](https://github.com/premAI-io/sid/releases/tag/v0.0.1)
 
-<Update label="January 21, 2025" description="v0.3.93">
-# v0.3.93
-- Bug fixes
-- Deprated llama 3.1 70b model.
-</Update>
-<Update label="January 20, 2025" description="v0.3.92">
-# v0.3.92
-- Improved chat latency.
-</Update>
-
-
-
-<Update label="January 15, 2025" description="v0.3.90">
-# v0.3.90
-***Finetuning***
-- Removed finetuning for Groq models.
-- Added fine-tuning evaluation.
-- Improved fine-tuning evaluation metrics.
-- Improved fine-tuning Model deployment.
-- Improved Docker Composed for fine-tuning.
-
-***Integrations***
-- UI updates for the integrations page.
-- Fixed multiple integration connections.
-- Improved integration deletion UX.
-- Added Notion integration.
-- Added Gmail integration.
-- Added Github integration.
-- You can now activate integrations through the Launchpad.
-
-***RAG***
-- Added the new bring your own Quadrant Vector Database feature.
-</Update>
-
-<Update label="December 19, 2024" description="v0.3.89">
-# v0.3.89
-
-- Internal model evaluation.
-- Added superuser topbar.
-- Show images in Traces.
-- Deprecated Groq "tool-use" models.
-</Update>
-
-<Update label="December 19, 2024" description="v0.3.87">
-# v0.3.87
-***Added support for the following new models:***
-- llama 3.3 70b - Powered by Groq
-- claude-3.5-sonnet-v2
-- claude-3.5-haiku
-
-***We've also added some new UI updates:***
-- New Navigation bar and sidebar. Now it's easier to navigate the platform.
-- Updated user login view
-- Update privacy policy and terms links
-
-***Other additions:***
-- When a model is deleted, an email is sent to the user.
-
-</Update>
-<Update label="November 26, 2024" description="v0.3.83">
-# v0.3.83
-- Bug fixes: Traces paginator
-</Update>
-<Update label="November 26, 2024" description="v0.3.82">
-# v0.3.82
-- Removed old trace columns
-- CI improvements
-</Update>
-<Update label="November 26, 2024" description="v0.3.80">
-# v0.3.80
-- Refactored checkpointing into a scheduler
-- Removed embedding model from repo update form
-- Improved frontend tooling
-- Support for Llama 70B full and lora finetuning
-
-</Update>
-<Update label="October 22, 2024" description="v0.3.72">
-# v0.3.72
-
-#### Improvements
-- **Dark Mode Only**: We've removed the light mode option, focusing on a more streamlined and cohesive dark mode experience.
-- **Datasource Improvements**: We've applied various enhancements and fixes to datasource functionality, improving overall data integration and processing.
-
-#### Features
-- **Document Deletion**: You can now delete incomplete documents, allowing for more flexible content management.
-- **Pending Invites Management**: We've introduced a new feature to handle pending invites, allowing users to manage their invitations effectively, including the ability to cancel pending invitations.
 </Update>
