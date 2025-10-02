@@ -187,11 +187,6 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Community",
-          "href": "https://discord.gg/tWwg9RSCXJ",
-          "icon": "discord"
-        },
-        {
           "anchor": "Blog",
           "href": "https://blog.premai.io",
           "icon": "newspaper"
