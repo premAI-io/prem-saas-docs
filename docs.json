@@ -145,6 +145,12 @@
         ]
       },
       {
+        "tab": "Release Notes",
+        "pages": [
+          "release-notes/release-notes"
+        ]
+      },
+      {
         "tab": "API Reference",
         "groups": [
           {
@@ -173,17 +179,6 @@
             "pages": [
               "api-reference/traces/get-trace",
               "api-reference/traces/post-traces"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Release Notes",
-        "groups": [
-          {
-            "group": "Release Notes",
-            "pages": [
-              "release-notes/release-notes"
             ]
           }
         ]
