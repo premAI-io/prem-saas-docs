@@ -154,9 +154,17 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "API Reference",
+            "group": "API Get Started",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+        {
+          "group": "Walkthroughs",
+          "pages": [
+            "api-reference/walkthroughs/jsonl-workflow",
+            "api-reference/walkthroughs/youtube-synthetic-workflow",
+            "api-reference/walkthroughs/pdf-synthetic-workflow"
+          ]
+        }
             ]
           },
           {

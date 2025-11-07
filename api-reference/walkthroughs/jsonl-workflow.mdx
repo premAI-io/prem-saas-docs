@@ -1,0 +1,527 @@
+---
+title: "JSONL Dataset Workflow"
+description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning jobs."
+---
+
+<Note>
+  Export your Prem API key as `API_KEY` before running any script. Set `API_BASE_URL` (defaults to `https://localhost`).
+</Note>
+
+
+<Steps>
+  <Step>
+  # Create a project
+
+  <CodeGroup>
+  ```ts TypeScript
+  const { project_id } = await api('/api/v1/public/projects/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'Test Project', goal: 'Test finetuning' })
+  });
+  ```
+  ```python Python
+  response = requests.post(
+      f"{API_BASE_URL}/api/v1/public/projects/create",
+      headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+      json={"name": "Test Project", "goal": "Test finetuning"}
+  )
+  response.raise_for_status()
+  project_id = response.json()["project_id"]
+  ```
+  </CodeGroup>
+
+  Start by creating a project workspace. The `project_id` is required for all subsequent operations.
+  </Step>
+
+  <Step>
+  #  Upload JSONL dataset
+
+  <CodeGroup>
+  ```ts TypeScript
+  const formData = new FormData();
+  formData.append('project_id', project_id);
+  formData.append('name', 'Test Dataset');
+  const jsonlFile = file('sample_data.jsonl');
+  formData.append('file', jsonlFile, 'sample_data.jsonl');
+
+  const { dataset_id } = await api('/api/v1/public/datasets/create-from-jsonl', {
+    method: 'POST',
+    body: formData
+  });
+  ```
+  ```python Python
+  with open('sample_data.jsonl', 'rb') as f:
+      files = {'file': ('sample_data.jsonl', f, 'application/json')}
+      data = {'project_id': project_id, 'name': 'Test Dataset'}
+      response = requests.post(
+          f"{API_BASE_URL}/api/v1/public/datasets/create-from-jsonl",
+          headers={"Authorization": f"Bearer {API_KEY}"},
+          files=files,
+          data=data
+      )
+  response.raise_for_status()
+  dataset_id = response.json()["dataset_id"]
+  ```
+  </CodeGroup>
+
+  Upload your pre-formatted JSONL file. Each line should contain a chat conversation in the expected format.
+  </Step>
+
+  <Step>
+  #  Wait for dataset processing
+
+  <CodeGroup>
+  ```ts TypeScript
+  let dataset;
+  do {
+    await sleep(2000);
+    dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+  } while (dataset.status === 'processing');
+  ```
+  ```python Python
+  while True:
+      time.sleep(2)
+      response = requests.get(
+          f"{API_BASE_URL}/api/v1/public/datasets/{dataset_id}",
+          headers={"Authorization": f"Bearer {API_KEY}"}
+      )
+      response.raise_for_status()
+      dataset = response.json()
+      if dataset["status"] != "processing":
+          break
+  ```
+  </CodeGroup>
+
+  Poll the dataset status until processing completes. JSONL uploads are typically fast.
+  </Step>
+
+  <Step>
+  #  Create snapshot
+
+  <CodeGroup>
+  ```ts TypeScript
+  const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dataset_id, split_percentage: 80 })
+  });
+  ```
+  ```python Python
+  response = requests.post(
+      f"{API_BASE_URL}/api/v1/public/snapshots/create",
+      headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+      json={"dataset_id": dataset_id, "split_percentage": 80}
+  )
+  response.raise_for_status()
+  snapshot_id = response.json()["snapshot_id"]
+  ```
+  </CodeGroup>
+
+  Split the dataset into training and validation sets. The default 80/20 split works well for most cases.
+  </Step>
+
+  <Step>
+  #  Generate recommendations
+
+  <CodeGroup>
+  ```ts TypeScript
+  await api('/api/v1/public/recommendations/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ snapshot_id, reasoning: false })
+  });
+
+  let recs;
+  do {
+    await sleep(5000);
+    recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+  } while (recs.status === 'processing');
+  ```
+  ```python Python
+  response = requests.post(
+      f"{API_BASE_URL}/api/v1/public/recommendations/generate",
+      headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+      json={"snapshot_id": snapshot_id, "reasoning": False}
+  )
+  response.raise_for_status()
+
+  while True:
+      time.sleep(5)
+      response = requests.get(
+          f"{API_BASE_URL}/api/v1/public/recommendations/{snapshot_id}",
+          headers={"Authorization": f"Bearer {API_KEY}"},
+          params={"reasoning": "false"}
+      )
+      response.raise_for_status()
+      recs = response.json()
+      if recs["status"] != "processing":
+          break
+  ```
+  </CodeGroup>
+
+  Request model recommendations for your snapshot. Poll until recommendations are ready, then filter for recommended models.
+  </Step>
+
+  <Step>
+  #  Create fine-tuning job
+
+  <CodeGroup>
+  ```ts TypeScript
+  const experiments = recs.recommended_models
+    .filter((m: any) => m.recommended)
+    .map((m: any) => ({
+      base_model_id: m.baseModelId,
+      batch_size: m.lora_hyperparameters.batchSize,
+      learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
+      n_epochs: m.lora_hyperparameters.nEpochs,
+      lora: true
+    }));
+
+  const { job_id } = await api('/api/v1/public/finetuning/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ snapshot_id, name: 'Test Job', reasoning: false, experiments })
+  });
+  ```
+  ```python Python
+  experiments = [
+      {
+          "base_model_id": m["base_model_id"],
+          "batch_size": m["lora_hyperparameters"]["batch_size"],
+          "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
+          "n_epochs": m["lora_hyperparameters"]["n_epochs"],
+          "lora": True
+      }
+      for m in recs["recommended_models"] if m["recommended"]
+  ]
+
+  response = requests.post(
+      f"{API_BASE_URL}/api/v1/public/finetuning/create",
+      headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+      json={"snapshot_id": snapshot_id, "name": "Test Job", "reasoning": False, "experiments": experiments}
+  )
+  response.raise_for_status()
+  job_id = response.json()["job_id"]
+  ```
+  </CodeGroup>
+
+  Build experiments from recommended models using LoRA hyperparameters, then launch the fine-tuning job.
+  </Step>
+
+  <Step>
+  #  Monitor job progress
+
+  <CodeGroup>
+  ```ts TypeScript
+  for (let i = 0; i < 30; i++) {
+    await sleep(10000);
+    const job = await api(`/api/v1/public/finetuning/${job_id}`);
+    console.log(`Status: ${job.status}`);
+    job.experiments.forEach((e: any) => {
+      console.log(`  - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
+    });
+    if (job.status !== 'processing') break;
+  }
+  ```
+  ```python Python
+  for i in range(30):
+      time.sleep(10)
+      response = requests.get(
+          f"{API_BASE_URL}/api/v1/public/finetuning/{job_id}",
+          headers={"Authorization": f"Bearer {API_KEY}"}
+      )
+      response.raise_for_status()
+      job = response.json()
+      print(f"Status: {job['status']}")
+      for exp in job["experiments"]:
+          print(f"  - Exp #{exp['experiment_number']}: {exp['status']} {exp.get('model_id', '')}")
+      if job["status"] != "processing":
+          break
+  ```
+  </CodeGroup>
+
+  Poll the job status every 10 seconds. Each experiment shows its status and final model ID when complete.
+  </Step>
+</Steps>
+
+## Full Example
+
+<CodeGroup>
+```ts TypeScript
+#!/usr/bin/env bun
+
+/**
+ * Example 1: JSONL dataset workflow
+ * 1. Create project → 2. Upload JSONL → 3. Create snapshot → 4. Get recommendations → 5. Run finetuning
+ */
+
+import { file } from 'bun';
+
+const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost';
+const API_KEY = process.env.API_KEY;
+
+// Disable TLS verification for local development with self-signed certs
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
+if (!API_KEY) {
+	console.error('Error: API_KEY environment variable is required');
+	console.error('Please create a .env file based on .env.example');
+	process.exit(1);
+}
+
+async function api(endpoint: string, options: any = {}): Promise<any> {
+	const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+		...options,
+		headers: { Authorization: `Bearer ${API_KEY}`, ...options.headers },
+	});
+	if (!res.ok) {
+		const err: any = await res.json().catch(() => ({}));
+		const errorMsg = typeof err.error === 'string' ? err.error : JSON.stringify(err);
+		throw new Error(`${res.status}: ${errorMsg}`);
+	}
+	return res.json();
+}
+
+function sleep(ms: number) {
+	return new Promise((r) => setTimeout(r, ms));
+}
+
+async function main() {
+	console.log('\n=== JSONL Workflow ===\n');
+
+	// 1. Create project
+	console.log('1. Creating project...');
+	const { project_id } = await api('/api/v1/public/projects/create', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ name: 'Test Project', goal: 'Test finetuning' }),
+	});
+	console.log(`   ✓ Project: ${project_id}\n`);
+
+	// 2. Upload JSONL
+	console.log('2. Uploading JSONL dataset...');
+	const formData = new FormData();
+	formData.append('project_id', project_id);
+	formData.append('name', 'Test Dataset');
+	const jsonlFile = file('sample_data.jsonl');
+	formData.append('file', jsonlFile, 'sample_data.jsonl');
+
+	const { dataset_id } = await api('/api/v1/public/datasets/create-from-jsonl', {
+		method: 'POST',
+		body: formData,
+	});
+	console.log(`   ✓ Dataset: ${dataset_id}`);
+
+	// Wait for dataset
+	console.log('   Waiting for dataset...');
+	let dataset;
+	do {
+		await sleep(2000);
+		dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+	} while (dataset.status === 'processing');
+	console.log(`   ✓ Ready: ${dataset.datapoints_count} datapoints\n`);
+
+	// 3. Create snapshot
+	console.log('3. Creating snapshot...');
+	const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ dataset_id, split_percentage: 80 }),
+	});
+	console.log(`   ✓ Snapshot: ${snapshot_id}\n`);
+
+	// 4. Generate recommendations
+	console.log('4. Generating recommendations...');
+	await api('/api/v1/public/recommendations/generate', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ snapshot_id, reasoning: false }),
+	});
+
+	let recs;
+	do {
+		await sleep(5000);
+		recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+	} while (recs.status === 'processing');
+
+	console.log(`   ✓ Recommended models:`);
+	const recommendedCount = recs.recommended_models.filter((m: any) => m.recommended).length;
+	console.log(`   Total models: ${recs.recommended_models.length}, Recommended: ${recommendedCount}`);
+	recs.recommended_models.forEach((m: any) => {
+		if (m.recommended) console.log(`     - ${m.baseModelId}`);
+	});
+	console.log();
+
+	// 5. Create finetuning job
+	console.log('5. Creating finetuning job...');
+	const experiments = recs.recommended_models
+		.filter((m: any) => m.recommended)
+		.map((m: any) => ({
+			base_model_id: m.baseModelId,
+			batch_size: m.lora_hyperparameters.batchSize,
+			learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
+			n_epochs: m.lora_hyperparameters.nEpochs,
+			lora: true,
+		}));
+
+	if (experiments.length === 0) {
+		console.error('\n✗ Error: No recommended models found. Cannot create finetuning job.');
+		process.exit(1);
+	}
+
+	const { job_id } = await api('/api/v1/public/finetuning/create', {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ snapshot_id, name: 'Test Job', reasoning: false, experiments }),
+	});
+	console.log(`   ✓ Job: ${job_id}\n`);
+
+	// 6. Monitor (5 minutes max)
+	console.log('6. Monitoring job...');
+	for (let i = 0; i < 30; i++) {
+		await sleep(10000);
+		const job = await api(`/api/v1/public/finetuning/${job_id}`);
+		console.log(`   Status: ${job.status}`);
+		job.experiments.forEach((e: any) => {
+			console.log(`     - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
+		});
+		if (job.status !== 'processing') break;
+	}
+
+	console.log('\n✓ Done!\n');
+}
+
+main().catch((err) => {
+	console.error('\n✗ Error:', err.message);
+	process.exit(1);
+});
+```
+```python Python
+#!/usr/bin/env python3
+
+"""
+Example 1: JSONL dataset workflow
+1. Create project → 2. Upload JSONL → 3. Create snapshot → 4. Get recommendations → 5. Run finetuning
+"""
+
+import os
+import time
+import requests
+
+API_BASE_URL = os.getenv("API_BASE_URL", "https://localhost")
+API_KEY = os.getenv("API_KEY")
+
+if not API_KEY:
+    print("Error: API_KEY environment variable is required")
+    exit(1)
+
+
+def api(endpoint: str, method: str = "GET", **kwargs):
+    response = requests.request(
+        method=method,
+        url=f"{API_BASE_URL}{endpoint}",
+        headers={"Authorization": f"Bearer {API_KEY}", **kwargs.pop("headers", {})},
+        **kwargs
+    )
+    if not response.ok:
+        err = response.json() if response.content else {}
+        error_msg = err.get("error", str(err)) if isinstance(err, dict) else str(err)
+        raise Exception(f"{response.status_code}: {error_msg}")
+    return response.json()
+
+
+def main():
+    print("\n=== JSONL Workflow ===\n")
+
+    #  Create project
+    print("1. Creating project...")
+    result = api("/api/v1/public/projects/create", method="POST", headers={"Content-Type": "application/json"}, json={"name": "Test Project", "goal": "Test finetuning"})
+    project_id = result["project_id"]
+    print(f"   ✓ Project: {project_id}\n")
+
+    #  Upload JSONL
+    print("2. Uploading JSONL dataset...")
+    with open("sample_data.jsonl", "rb") as f:
+        files = {"file": ("sample_data.jsonl", f, "application/json")}
+        data = {"project_id": project_id, "name": "Test Dataset"}
+        result = api("/api/v1/public/datasets/create-from-jsonl", method="POST", files=files, data=data)
+    dataset_id = result["dataset_id"]
+    print(f"   ✓ Dataset: {dataset_id}")
+
+    # Wait for dataset
+    print("   Waiting for dataset...")
+    while True:
+        time.sleep(2)
+        dataset = api(f"/api/v1/public/datasets/{dataset_id}")
+        if dataset["status"] != "processing":
+            break
+    print(f"   ✓ Ready: {dataset['datapoints_count']} datapoints\n")
+
+    #  Create snapshot
+    print("3. Creating snapshot...")
+    result = api("/api/v1/public/snapshots/create", method="POST", headers={"Content-Type": "application/json"}, json={"dataset_id": dataset_id, "split_percentage": 80})
+    snapshot_id = result["snapshot_id"]
+    print(f"   ✓ Snapshot: {snapshot_id}\n")
+
+    #  Generate recommendations
+    print("4. Generating recommendations...")
+    api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "reasoning": False})
+
+    while True:
+        time.sleep(5)
+        recs = api(f"/api/v1/public/recommendations/{snapshot_id}", params={"reasoning": "false"})
+        if recs["status"] != "processing":
+            break
+
+    print("   ✓ Recommended models:")
+    recommended_count = sum(1 for m in recs["recommended_models"] if m["recommended"])
+    print(f"   Total models: {len(recs['recommended_models'])}, Recommended: {recommended_count}")
+    for m in recs["recommended_models"]:
+        if m["recommended"]:
+            print(f"     - {m['base_model_id']}")
+    print()
+
+    #  Create finetuning job
+    print("5. Creating finetuning job...")
+    experiments = [
+        {
+            "base_model_id": m["base_model_id"],
+            "batch_size": m["lora_hyperparameters"]["batch_size"],
+            "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
+            "n_epochs": m["lora_hyperparameters"]["n_epochs"],
+            "lora": True
+        }
+        for m in recs["recommended_models"] if m["recommended"]
+    ]
+
+    if not experiments:
+        print("\n✗ Error: No recommended models found. Cannot create finetuning job.")
+        exit(1)
+
+    result = api("/api/v1/public/finetuning/create", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "name": "Test Job", "reasoning": False, "experiments": experiments})
+    job_id = result["job_id"]
+    print(f"   ✓ Job: {job_id}\n")
+
+    #  Monitor (5 minutes max)
+    print("6. Monitoring job...")
+    for i in range(30):
+        time.sleep(10)
+        job = api(f"/api/v1/public/finetuning/{job_id}")
+        print(f"   Status: {job['status']}")
+        for exp in job["experiments"]:
+            print(f"     - Exp #{exp['experiment_number']}: {exp['status']} {exp.get('model_id', '')}")
+        if job["status"] != "processing":
+            break
+
+    print("\n✓ Done!\n")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as err:
+        print(f"\n✗ Error: {err}")
+        exit(1)
+```
+</CodeGroup>

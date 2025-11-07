@@ -17,13 +17,59 @@ Here you can find documentation for all of the endpoints that are available in t
 
 **Prem** provides a REST API that you can use to interact with the platform with any programming language that can make HTTP requests.
 
-<CardGroup cols={2}>
+#### Build your data pipeline
+
+<CardGroup cols={3}>
+  <Card
+    title="Projects"
+    icon="folder"
+    href="/api-reference/projects"
+  >
+    Provision and inspect project workspaces
+  </Card>
+
+  <Card
+    title="Datasets"
+    icon="database"
+    href="/api-reference/datasets"
+  >
+    Ingest JSONL files or trigger synthetic runs
+  </Card>
+
+  <Card
+    title="Snapshots"
+    icon="scissors"
+    href="/api-reference/snapshots"
+  >
+    Split datasets into train and validation sets
+  </Card>
+
+  <Card
+    title="Recommendations"
+    icon="sparkles"
+    href="/api-reference/recommendations"
+  >
+    Request model suggestions for a snapshot
+  </Card>
+
+  <Card
+    title="Fine-Tuning"
+    icon="wrench"
+    href="/api-reference/finetuning"
+  >
+    Launch and monitor fine-tuning jobs
+  </Card>
+</CardGroup>
+
+#### Run and observe models
+
+<CardGroup cols={3}>
   <Card
     title="Chat Completions"
     icon="message"
     href="/api-reference/chat-completions"
   >
-    View chat completion endpoint details
+    Send prompts to deployed chat models
   </Card>
 
   <Card
@@ -31,7 +77,7 @@ Here you can find documentation for all of the endpoints that are available in t
     icon="brain"
     href="/api-reference/models"
   >
-    View models endpoint details
+    List, load, and unload available models
   </Card>
 
   <Card
@@ -39,9 +85,8 @@ Here you can find documentation for all of the endpoints that are available in t
     icon="rectangle-history"
     href="/api-reference/traces"
   >
-    View traces endpoint details
+    Retrieve traces captured during inference
   </Card>
-
 </CardGroup>
 
 
