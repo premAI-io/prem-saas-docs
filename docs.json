@@ -154,9 +154,54 @@
         "tab": "API Reference",
         "groups": [
           {
-            "group": "API Reference",
+            "group": "API Get Started",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+        {
+          "group": "Walkthroughs",
+          "pages": [
+            "api-reference/walkthroughs/jsonl-workflow",
+            "api-reference/walkthroughs/youtube-synthetic-workflow",
+            "api-reference/walkthroughs/pdf-synthetic-workflow"
+          ]
+        }
+            ]
+          },
+          {
+            "group": "Projects API",
+            "pages": [
+              "api-reference/projects/post-projects-create",
+              "api-reference/projects/get-projects",
+              "api-reference/projects/get-projects-projectid"
+            ]
+          },
+          {
+            "group": "Datasets API",
+            "pages": [
+              "api-reference/datasets/post-datasets-create-from-jsonl",
+              "api-reference/datasets/post-datasets-create-synthetic",
+              "api-reference/datasets/get-datasets-datasetid"
+            ]
+          },
+          {
+            "group": "Snapshots API",
+            "pages": [
+              "api-reference/snapshots/post-snapshots-create",
+              "api-reference/snapshots/post-snapshots-create-from-files"
+            ]
+          },
+          {
+            "group": "Recommendations API",
+            "pages": [
+              "api-reference/recommendations/get-recommendations-snapshotid",
+              "api-reference/recommendations/post-recommendations-generate"
+            ]
+          },
+          {
+            "group": "Fine-Tuning API",
+            "pages": [
+              "api-reference/finetuning/get-finetuning-jobid",
+              "api-reference/finetuning/post-finetuning-create"
             ]
           },
           {
