@@ -213,8 +213,6 @@
             "group": "Models API",
             "pages": [
               "api-reference/models/get-models",
-              "api-reference/models/post-chatmodelup",
-              "api-reference/models/post-chatmodeldown",
               "api-reference/models/get-chatmodelrunning"
             ]
           },
