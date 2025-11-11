@@ -243,7 +243,7 @@
     "dark": "/images/logos/White.svg"
   },
   "api": {
-    "openapi": "https://studio.premai.io/openapi.json",
+    "openapi": "https://studio.premai.io/api/openapi.json",
     "examples": {
       "languages": ["curl", "python", "javascript"],
       "defaults": "required"
