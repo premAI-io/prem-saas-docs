@@ -25,6 +25,30 @@ This walkthrough demonstrates how to build a **structured data extraction model*
 
 <Steps>
   <Step>
+  # Setup: Define your PDF files
+
+  <CodeGroup>
+  ```ts TypeScript
+  const API_KEY = process.env.API_KEY;
+
+  // Define your invoice PDF files to process
+  const PDF_FILES = ['invoice_1.pdf', 'invoice_2.pdf', 'invoice_3.pdf'];
+  ```
+  ```python Python
+  import os
+  import requests
+
+  API_KEY = os.getenv("API_KEY")
+
+  # Define your invoice PDF files to process
+  PDF_FILES = ["invoice_1.pdf", "invoice_2.pdf", "invoice_3.pdf"]
+  ```
+  </CodeGroup>
+
+  Define the PDF files you want to process. Make sure these files exist in your working directory.
+  </Step>
+
+  <Step>
   # Create project and generate synthetic dataset from PDF
 
   <CodeGroup>

@@ -10,6 +10,31 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 
 <Steps>
   <Step>
+  # Setup: Define your JSONL file
+
+  <CodeGroup>
+  ```ts TypeScript
+  const API_KEY = process.env.API_KEY;
+
+  // Define your JSONL dataset file
+  const JSONL_FILE_PATH = 'sample_data.jsonl';
+  ```
+  ```python Python
+  import os
+  import time
+  import requests
+
+  API_KEY = os.getenv("API_KEY")
+
+  # Define your JSONL dataset file
+  JSONL_FILE_PATH = "sample_data.jsonl"
+  ```
+  </CodeGroup>
+
+  Define the path to your JSONL dataset file. Make sure the file exists and is properly formatted.
+  </Step>
+
+  <Step>
   # Create a project
 
   <CodeGroup>
@@ -47,8 +72,8 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   const formData = new FormData();
   formData.append('project_id', project_id);
   formData.append('name', 'Test Dataset');
-  const jsonlFile = file('sample_data.jsonl');
-  formData.append('file', jsonlFile, 'sample_data.jsonl');
+  const jsonlFile = file(JSONL_FILE_PATH);
+  formData.append('file', jsonlFile, JSONL_FILE_PATH);
 
   const res = await fetch('https://studio.premai.io/api/v1/public/datasets/create-from-jsonl', {
     method: 'POST',
@@ -59,8 +84,8 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   const { dataset_id } = await res.json();
   ```
   ```python Python
-  with open('sample_data.jsonl', 'rb') as f:
-      files = {'file': ('sample_data.jsonl', f, 'application/json')}
+  with open(JSONL_FILE_PATH, 'rb') as f:
+      files = {'file': (JSONL_FILE_PATH, f, 'application/json')}
       data = {'project_id': project_id, 'name': 'Test Dataset'}
       response = requests.post(
           "https://studio.premai.io/api/v1/public/datasets/create-from-jsonl",
@@ -280,6 +305,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 import { file } from 'bun';
 
 const API_KEY = process.env.API_KEY;
+const JSONL_FILE_PATH = 'sample_data.jsonl';
 
 if (!API_KEY) {
 	console.error('Error: API_KEY environment variable is required');
@@ -313,8 +339,8 @@ async function main() {
 	const formData = new FormData();
 	formData.append('project_id', project_id);
 	formData.append('name', 'Test Dataset');
-	const jsonlFile = file('sample_data.jsonl');
-	formData.append('file', jsonlFile, 'sample_data.jsonl');
+	const jsonlFile = file(JSONL_FILE_PATH);
+	formData.append('file', jsonlFile, JSONL_FILE_PATH);
 
 	const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-from-jsonl', {
 		method: 'POST',
@@ -442,6 +468,7 @@ import time
 import requests
 
 API_KEY = os.getenv("API_KEY")
+JSONL_FILE_PATH = "sample_data.jsonl"
 
 if not API_KEY:
     print("Error: API_KEY environment variable is required")
@@ -473,8 +500,8 @@ def main():
 
     #  Upload JSONL
     print("2. Uploading JSONL dataset...")
-    with open("sample_data.jsonl", "rb") as f:
-        files = {"file": ("sample_data.jsonl", f, "application/json")}
+    with open(JSONL_FILE_PATH, "rb") as f:
+        files = {"file": (JSONL_FILE_PATH, f, "application/json")}
         data = {"project_id": project_id, "name": "Test Dataset"}
         result = api("/api/v1/public/datasets/create-from-jsonl", method="POST", files=files, data=data)
     dataset_id = result["dataset_id"]

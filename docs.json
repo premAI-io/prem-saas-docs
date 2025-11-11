@@ -163,7 +163,8 @@
             "pages": [
               "api-reference/walkthroughs/jsonl-workflow",
               "api-reference/walkthroughs/youtube-synthetic-workflow",
-              "api-reference/walkthroughs/pdf-synthetic-workflow"
+              "api-reference/walkthroughs/pdf-synthetic-workflow",
+              "api-reference/walkthroughs/continuous-finetuning-workflow"
             ]
           },
           {
@@ -242,7 +243,7 @@
     "dark": "/images/logos/White.svg"
   },
   "api": {
-    "openapi": "https://studio.premai.io/api/openapi.json",
+    "openapi": "openapi.json",
     "examples": {
       "languages": ["curl", "python", "javascript"],
       "defaults": "required"

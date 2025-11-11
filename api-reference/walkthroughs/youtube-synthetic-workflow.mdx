@@ -29,10 +29,13 @@ This walkthrough demonstrates how to build a **stock analysis and investment tip
 
 <Steps>
   <Step>
-  # Create project and generate synthetic dataset
+  # Setup: Define your YouTube URLs
 
   <CodeGroup>
   ```ts TypeScript
+  const API_KEY = process.env.API_KEY;
+
+  // Define the YouTube videos you want to analyze
   const YOUTUBE_URLS = [
     'https://www.youtube.com/watch?v=JH-k5f4Yclc',
     'https://www.youtube.com/watch?v=YEWhxcpMS1c',
@@ -40,7 +43,32 @@ This walkthrough demonstrates how to build a **stock analysis and investment tip
     'https://www.youtube.com/watch?v=26xatIiMv88',
     'https://www.youtube.com/watch?v=-Da3gUdzCvs'
   ];
+  ```
+  ```python Python
+  import os
+  import requests
 
+  API_KEY = os.getenv("API_KEY")
+
+  # Define the YouTube videos you want to analyze
+  YOUTUBE_URLS = [
+      "https://www.youtube.com/watch?v=JH-k5f4Yclc",
+      "https://www.youtube.com/watch?v=YEWhxcpMS1c",
+      "https://www.youtube.com/watch?v=cb8up3HVXis",
+      "https://www.youtube.com/watch?v=26xatIiMv88",
+      "https://www.youtube.com/watch?v=-Da3gUdzCvs"
+  ]
+  ```
+  </CodeGroup>
+
+  Define the YouTube video URLs you want to process. You can replace these with any financial or educational videos.
+  </Step>
+
+  <Step>
+  # Create project and generate synthetic dataset
+
+  <CodeGroup>
+  ```ts TypeScript
   const res = await fetch('https://studio.premai.io/api/v1/public/projects/create', {
     method: 'POST',
     headers: {
