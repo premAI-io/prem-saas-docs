@@ -3,9 +3,23 @@ title: "PDF Synthetic Dataset Workflow"
 description: "Generate synthetic Q&A pairs from PDF documents, create snapshots, and launch fine-tuning."
 ---
 
+## Overview
+
+This walkthrough demonstrates how to build a **structured data extraction model** from invoice receipts. You'll learn how to:
+
+- Upload multiple invoice PDFs to generate synthetic training data
+- Use **question/answer templates** to enforce strict JSON output format
+- Extract key fields like date, amount, currency, business name, and location
+- Create train/validation splits and get model recommendations
+- Launch fine-tuning jobs to create a production-ready extraction model
+
+**Why This Matters**: Many businesses need to automatically extract structured information from semi-structured documents (invoices, receipts, forms). This workflow shows you how to fine-tune a model that reliably outputs JSON with specific fields, without manual labeling.
+
+**What You'll Build**: A model that takes invoice text as input and returns structured JSON with transaction details.
+
 <Note>
   Export your Prem API key as `API_KEY` before running any script.
-  Place your PDF file as `By-Laws.pdf` in the same directory or update the `PDF_FILE` variable.
+  Place your invoice PDF files in the same directory or update the `PDF_FILES` array.
 </Note>
 
 
@@ -21,19 +35,59 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
       'Authorization': `Bearer ${API_KEY}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ name: 'PepsiCo By-Laws Project', goal: 'Train on corporate governance' })
+    body: JSON.stringify({ name: 'Invoice Extraction Project', goal: 'Extract structured data from receipts' })
   });
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
   const { project_id } = await res.json();
 
   const formData = new FormData();
   formData.append('project_id', project_id);
-  formData.append('name', 'PepsiCo By-Laws Dataset');
-  const pdfFile = file(PDF_FILE);
-  formData.append('files[]', pdfFile, PDF_FILE);
-  formData.append('pairs_to_generate', '100');
+  formData.append('name', 'Invoice Receipts Dataset');
+
+  // Upload multiple PDF files
+  PDF_FILES.forEach((pdfPath: string) => {
+    const pdfFile = file(pdfPath);
+    formData.append('files[]', pdfFile, pdfPath);
+  });
+
+  formData.append('pairs_to_generate', '1');
   formData.append('pair_type', 'qa');
-  formData.append('user_instructions', 'Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document.');
+  formData.append('temperature', '0');
+
+  // Add rules and constraints
+  formData.append('rules[]', 'Always include the full extracted text in the question');
+  formData.append('rules[]', 'Clearly instruct extraction into the given JSON schema');
+  formData.append('rules[]', 'Only output the JSON object (no extra text)');
+  formData.append('rules[]', 'Fill fields only if explicitly present in the text');
+  formData.append('rules[]', 'If a field is missing, leave it empty but keep the key');
+  formData.append('rules[]', 'Strictly follow the schema');
+  formData.append('rules[]', 'Never infer, guess, or fabricate information');
+
+  // Define question format
+  const questionFormat = `{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}`;
+  formData.append('question_format', questionFormat);
+
+  // Define answer format
+  const answerFormat = `{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}`;
+  formData.append('answer_format', answerFormat);
 
   const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-synthetic', {
     method: 'POST',
@@ -47,32 +101,75 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
   response = requests.post(
       "https://studio.premai.io/api/v1/public/projects/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"name": "PepsiCo By-Laws Project", "goal": "Train on corporate governance"}
+      json={"name": "Invoice Extraction Project", "goal": "Extract structured data from receipts"}
   )
   response.raise_for_status()
   project_id = response.json()["project_id"]
 
-  with open(PDF_FILE, 'rb') as f:
-      files = {'files[]': (PDF_FILE, f, 'application/pdf')}
-      data = {
-          'project_id': project_id,
-          'name': 'PepsiCo By-Laws Dataset',
-          'pairs_to_generate': '100',
-          'pair_type': 'qa',
-          'user_instructions': 'Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document.'
-      }
-      response = requests.post(
-          "https://studio.premai.io/api/v1/public/datasets/create-synthetic",
-          headers={"Authorization": f"Bearer {API_KEY}"},
-          files=files,
-          data=data
-      )
+  # Prepare files to upload
+  files = [(file_path, open(file_path, 'rb'), 'application/pdf') for file_path in PDF_FILES]
+  files_dict = [('files[]', f) for f in files]
+
+  # Define question format
+  question_format = """{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}"""
+
+  # Define answer format
+  answer_format = """{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}"""
+
+  data = {
+      'project_id': project_id,
+      'name': 'Invoice Receipts Dataset',
+      'pairs_to_generate': '1',
+      'pair_type': 'qa',
+      'temperature': '0',
+      'rules[]': [
+          'Always include the full extracted text in the question',
+          'Clearly instruct extraction into the given JSON schema',
+          'Only output the JSON object (no extra text)',
+          'Fill fields only if explicitly present in the text',
+          'If a field is missing, leave it empty but keep the key',
+          'Strictly follow the schema',
+          'Never infer, guess, or fabricate information'
+      ],
+      'question_format': question_format,
+      'answer_format': answer_format
+  }
+
+  response = requests.post(
+      "https://studio.premai.io/api/v1/public/datasets/create-synthetic",
+      headers={"Authorization": f"Bearer {API_KEY}"},
+      files=files_dict,
+      data=data
+  )
+
+  # Close file handles
+  for _, f, _ in files:
+      f.close()
+
   response.raise_for_status()
   dataset_id = response.json()["dataset_id"]
   ```
   </CodeGroup>
 
-  Create a project, then upload PDF files to generate synthetic Q&A pairs. The generation can take 5-10 minutes depending on document size.
+  Create a project, then upload multiple PDF invoice files to generate synthetic Q&A pairs that extract structured JSON data. The generation can take 5-10 minutes depending on document size.
   </Step>
 
   <Step>
@@ -276,7 +373,7 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
 import { file } from 'bun';
 
 const API_KEY = process.env.API_KEY;
-const PDF_FILE = 'By-Laws.pdf';
+const PDF_FILES = ['invoice_1.pdf', 'invoice_2.pdf', 'invoice_3.pdf'];
 
 if (!API_KEY) {
 	console.error('Error: API_KEY environment variable is required');
@@ -299,26 +396,63 @@ async function main() {
 			'Authorization': `Bearer ${API_KEY}`,
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify({ name: 'PepsiCo By-Laws Project', goal: 'Train on corporate governance' }),
+		body: JSON.stringify({ name: 'Invoice Extraction Project', goal: 'Extract structured data from receipts' }),
 	});
 	if (!res1.ok) throw new Error(`${res1.status}: ${await res1.text()}`);
 	const { project_id } = await res1.json();
 	console.log(`   ✓ Project: ${project_id}\n`);
 
 	// 2. Generate synthetic dataset from PDF
-	console.log('2. Generating synthetic dataset from PDF...');
-	console.log(`   File: ${PDF_FILE}`);
+	console.log('2. Generating synthetic dataset from PDFs...');
+	console.log(`   Files: ${PDF_FILES.join(', ')}`);
 	const formData = new FormData();
 	formData.append('project_id', project_id);
-	formData.append('name', 'PepsiCo By-Laws Dataset');
-	const pdfFile = file(PDF_FILE);
-	formData.append('files[]', pdfFile, PDF_FILE);
-	formData.append('pairs_to_generate', '100');
+	formData.append('name', 'Invoice Receipts Dataset');
+
+	// Upload multiple PDF files
+	PDF_FILES.forEach((pdfPath) => {
+		const pdfFile = file(pdfPath);
+		formData.append('files[]', pdfFile, pdfPath);
+	});
+
+	formData.append('pairs_to_generate', '1');
 	formData.append('pair_type', 'qa');
-	formData.append(
-		'user_instructions',
-		'Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document.'
-	);
+	formData.append('temperature', '0');
+
+	// Add rules and constraints
+	formData.append('rules[]', 'Always include the full extracted text in the question');
+	formData.append('rules[]', 'Clearly instruct extraction into the given JSON schema');
+	formData.append('rules[]', 'Only output the JSON object (no extra text)');
+	formData.append('rules[]', 'Fill fields only if explicitly present in the text');
+	formData.append('rules[]', 'If a field is missing, leave it empty but keep the key');
+	formData.append('rules[]', 'Strictly follow the schema');
+	formData.append('rules[]', 'Never infer, guess, or fabricate information');
+
+	// Define question format
+	const questionFormat = `{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}`;
+	formData.append('question_format', questionFormat);
+
+	// Define answer format
+	const answerFormat = `{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}`;
+	formData.append('answer_format', answerFormat);
 
 	const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-synthetic', {
 		method: 'POST',
@@ -450,7 +584,7 @@ import time
 import requests
 
 API_KEY = os.getenv("API_KEY")
-PDF_FILE = "By-Laws.pdf"
+PDF_FILES = ["invoice_1.pdf", "invoice_2.pdf", "invoice_3.pdf"]
 
 if not API_KEY:
     print("Error: API_KEY environment variable is required")
@@ -476,23 +610,67 @@ def main():
 
     # Create project
     print("1. Creating project...")
-    result = api("/api/v1/public/projects/create", method="POST", headers={"Content-Type": "application/json"}, json={"name": "PepsiCo By-Laws Project", "goal": "Train on corporate governance"})
+    result = api("/api/v1/public/projects/create", method="POST", headers={"Content-Type": "application/json"}, json={"name": "Invoice Extraction Project", "goal": "Extract structured data from receipts"})
     project_id = result["project_id"]
     print(f"   ✓ Project: {project_id}\n")
 
     # Generate synthetic dataset from PDF
-    print("2. Generating synthetic dataset from PDF...")
-    print(f"   File: {PDF_FILE}")
-    with open(PDF_FILE, "rb") as f:
-        files = {"files[]": (PDF_FILE, f, "application/pdf")}
-        data = {
-            "project_id": project_id,
-            "name": "PepsiCo By-Laws Dataset",
-            "pairs_to_generate": "100",
-            "pair_type": "qa",
-            "user_instructions": "Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document."
-        }
-        result = api("/api/v1/public/datasets/create-synthetic", method="POST", files=files, data=data)
+    print("2. Generating synthetic dataset from PDFs...")
+    print(f"   Files: {', '.join(PDF_FILES)}")
+
+    # Prepare files to upload
+    files = [(file_path, open(file_path, 'rb'), 'application/pdf') for file_path in PDF_FILES]
+    files_dict = [('files[]', f) for f in files]
+
+    # Define question format
+    question_format = """{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}"""
+
+    # Define answer format
+    answer_format = """{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}"""
+
+    data = {
+        "project_id": project_id,
+        "name": "Invoice Receipts Dataset",
+        "pairs_to_generate": "1",
+        "pair_type": "qa",
+        "temperature": "0",
+        "rules[]": [
+            "Always include the full extracted text in the question",
+            "Clearly instruct extraction into the given JSON schema",
+            "Only output the JSON object (no extra text)",
+            "Fill fields only if explicitly present in the text",
+            "If a field is missing, leave it empty but keep the key",
+            "Strictly follow the schema",
+            "Never infer, guess, or fabricate information"
+        ],
+        "question_format": question_format,
+        "answer_format": answer_format
+    }
+
+    result = api("/api/v1/public/datasets/create-synthetic", method="POST", files=files_dict, data=data)
+
+    # Close file handles
+    for _, f, _ in files:
+        f.close()
+
     dataset_id = result["dataset_id"]
     print(f"   ✓ Dataset: {dataset_id}")
 
