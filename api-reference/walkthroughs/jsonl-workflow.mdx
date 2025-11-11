@@ -4,7 +4,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 ---
 
 <Note>
-  Export your Prem API key as `API_KEY` before running any script. Set `API_BASE_URL` (defaults to `https://localhost`).
+  Export your Prem API key as `API_KEY` before running any script.
 </Note>
 
 
@@ -22,7 +22,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   ```python Python
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/projects/create",
+      "https://studio.premai.io/api/v1/public/projects/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
       json={"name": "Test Project", "goal": "Test finetuning"}
   )
@@ -55,7 +55,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
       files = {'file': ('sample_data.jsonl', f, 'application/json')}
       data = {'project_id': project_id, 'name': 'Test Dataset'}
       response = requests.post(
-          f"{API_BASE_URL}/api/v1/public/datasets/create-from-jsonl",
+          "https://studio.premai.io/api/v1/public/datasets/create-from-jsonl",
           headers={"Authorization": f"Bearer {API_KEY}"},
           files=files,
           data=data
@@ -65,7 +65,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Upload your pre-formatted JSONL file. Each line should contain a chat conversation in the expected format.
+  Upload your pre-formatted JSONL file. Each line should contain a chat conversation in the expected format. For details on the required dataset structure, see [Dataset Structure](/datasets/overview#dataset-structure).
   </Step>
 
   <Step>
@@ -83,7 +83,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   while True:
       time.sleep(2)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/datasets/{dataset_id}",
+          f"https://studio.premai.io/api/v1/public/datasets/{dataset_id}",
           headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
@@ -109,7 +109,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   ```python Python
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/snapshots/create",
+      "https://studio.premai.io/api/v1/public/snapshots/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
       json={"dataset_id": dataset_id, "split_percentage": 80}
   )
@@ -129,29 +129,28 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   await api('/api/v1/public/recommendations/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ snapshot_id, reasoning: false })
+    body: JSON.stringify({ snapshot_id })
   });
 
   let recs;
   do {
     await sleep(5000);
-    recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+    recs = await api(`/api/v1/public/recommendations/${snapshot_id}`);
   } while (recs.status === 'processing');
   ```
   ```python Python
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/recommendations/generate",
+      "https://studio.premai.io/api/v1/public/recommendations/generate",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"snapshot_id": snapshot_id, "reasoning": False}
+      json={"snapshot_id": snapshot_id}
   )
   response.raise_for_status()
 
   while True:
       time.sleep(5)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/recommendations/{snapshot_id}",
-          headers={"Authorization": f"Bearer {API_KEY}"},
-          params={"reasoning": "false"}
+          f"https://studio.premai.io/api/v1/public/recommendations/{snapshot_id}",
+          headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
       recs = response.json()
@@ -168,45 +167,33 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 
   <CodeGroup>
   ```ts TypeScript
-  const experiments = recs.recommended_models
-    .filter((m: any) => m.recommended)
-    .map((m: any) => ({
-      base_model_id: m.baseModelId,
-      batch_size: m.lora_hyperparameters.batchSize,
-      learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
-      n_epochs: m.lora_hyperparameters.nEpochs,
-      lora: true
-    }));
+  const experiments = recs.recommended_experiments
+    .filter((e: any) => e.recommended)
+    .map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
   const { job_id } = await api('/api/v1/public/finetuning/create', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ snapshot_id, name: 'Test Job', reasoning: false, experiments })
+    body: JSON.stringify({ snapshot_id, name: 'Test Job', experiments })
   });
   ```
   ```python Python
   experiments = [
-      {
-          "base_model_id": m["base_model_id"],
-          "batch_size": m["lora_hyperparameters"]["batch_size"],
-          "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
-          "n_epochs": m["lora_hyperparameters"]["n_epochs"],
-          "lora": True
-      }
-      for m in recs["recommended_models"] if m["recommended"]
+      {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+      for exp in recs["recommended_experiments"] if exp["recommended"]
   ]
 
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/finetuning/create",
+      "https://studio.premai.io/api/v1/public/finetuning/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"snapshot_id": snapshot_id, "name": "Test Job", "reasoning": False, "experiments": experiments}
+      json={"snapshot_id": snapshot_id, "name": "Test Job", "experiments": experiments}
   )
   response.raise_for_status()
   job_id = response.json()["job_id"]
   ```
   </CodeGroup>
 
-  Build experiments from recommended models using LoRA hyperparameters, then launch the fine-tuning job.
+  Filter recommended experiments and use them directly to launch the fine-tuning job.
   </Step>
 
   <Step>
@@ -228,7 +215,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   for i in range(30):
       time.sleep(10)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/finetuning/{job_id}",
+          f"https://studio.premai.io/api/v1/public/finetuning/{job_id}",
           headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
@@ -258,11 +245,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 
 import { file } from 'bun';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost';
 const API_KEY = process.env.API_KEY;
-
-// Disable TLS verification for local development with self-signed certs
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 if (!API_KEY) {
 	console.error('Error: API_KEY environment variable is required');
@@ -271,7 +254,7 @@ if (!API_KEY) {
 }
 
 async function api(endpoint: string, options: any = {}): Promise<any> {
-	const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+	const res = await fetch(`https://studio.premai.io${endpoint}`, {
 		...options,
 		headers: { Authorization: `Bearer ${API_KEY}`, ...options.headers },
 	});
@@ -336,44 +319,38 @@ async function main() {
 	await api('/api/v1/public/recommendations/generate', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ snapshot_id, reasoning: false }),
+		body: JSON.stringify({ snapshot_id }),
 	});
 
 	let recs;
 	do {
 		await sleep(5000);
-		recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+		recs = await api(`/api/v1/public/recommendations/${snapshot_id}`);
 	} while (recs.status === 'processing');
 
-	console.log(`   ✓ Recommended models:`);
-	const recommendedCount = recs.recommended_models.filter((m: any) => m.recommended).length;
-	console.log(`   Total models: ${recs.recommended_models.length}, Recommended: ${recommendedCount}`);
-	recs.recommended_models.forEach((m: any) => {
-		if (m.recommended) console.log(`     - ${m.baseModelId}`);
+	console.log(`   ✓ Recommended experiments:`);
+	const recommendedCount = recs.recommended_experiments.filter((e: any) => e.recommended).length;
+	console.log(`   Total experiments: ${recs.recommended_experiments.length}, Recommended: ${recommendedCount}`);
+	recs.recommended_experiments.forEach((e: any) => {
+		if (e.recommended) console.log(`     - ${e.base_model_id} (LoRA: ${e.lora})`);
 	});
 	console.log();
 
 	// 5. Create finetuning job
 	console.log('5. Creating finetuning job...');
-	const experiments = recs.recommended_models
-		.filter((m: any) => m.recommended)
-		.map((m: any) => ({
-			base_model_id: m.baseModelId,
-			batch_size: m.lora_hyperparameters.batchSize,
-			learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
-			n_epochs: m.lora_hyperparameters.nEpochs,
-			lora: true,
-		}));
+	const experiments = recs.recommended_experiments
+		.filter((e: any) => e.recommended)
+		.map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
 	if (experiments.length === 0) {
-		console.error('\n✗ Error: No recommended models found. Cannot create finetuning job.');
+		console.error('\n✗ Error: No recommended experiments found. Cannot create finetuning job.');
 		process.exit(1);
 	}
 
 	const { job_id } = await api('/api/v1/public/finetuning/create', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ snapshot_id, name: 'Test Job', reasoning: false, experiments }),
+		body: JSON.stringify({ snapshot_id, name: 'Test Job', experiments }),
 	});
 	console.log(`   ✓ Job: ${job_id}\n`);
 
@@ -409,7 +386,6 @@ import os
 import time
 import requests
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://localhost")
 API_KEY = os.getenv("API_KEY")
 
 if not API_KEY:
@@ -420,7 +396,7 @@ if not API_KEY:
 def api(endpoint: str, method: str = "GET", **kwargs):
     response = requests.request(
         method=method,
-        url=f"{API_BASE_URL}{endpoint}",
+        url=f"https://studio.premai.io{endpoint}",
         headers={"Authorization": f"Bearer {API_KEY}", **kwargs.pop("headers", {})},
         **kwargs
     )
@@ -466,40 +442,34 @@ def main():
 
     #  Generate recommendations
     print("4. Generating recommendations...")
-    api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "reasoning": False})
+    api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id})
 
     while True:
         time.sleep(5)
-        recs = api(f"/api/v1/public/recommendations/{snapshot_id}", params={"reasoning": "false"})
+        recs = api(f"/api/v1/public/recommendations/{snapshot_id}")
         if recs["status"] != "processing":
             break
 
-    print("   ✓ Recommended models:")
-    recommended_count = sum(1 for m in recs["recommended_models"] if m["recommended"])
-    print(f"   Total models: {len(recs['recommended_models'])}, Recommended: {recommended_count}")
-    for m in recs["recommended_models"]:
-        if m["recommended"]:
-            print(f"     - {m['base_model_id']}")
+    print("   ✓ Recommended experiments:")
+    recommended_count = sum(1 for e in recs["recommended_experiments"] if e["recommended"])
+    print(f"   Total experiments: {len(recs['recommended_experiments'])}, Recommended: {recommended_count}")
+    for e in recs["recommended_experiments"]:
+        if e["recommended"]:
+            print(f"     - {e['base_model_id']} (LoRA: {e['lora']})")
     print()
 
     #  Create finetuning job
     print("5. Creating finetuning job...")
     experiments = [
-        {
-            "base_model_id": m["base_model_id"],
-            "batch_size": m["lora_hyperparameters"]["batch_size"],
-            "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
-            "n_epochs": m["lora_hyperparameters"]["n_epochs"],
-            "lora": True
-        }
-        for m in recs["recommended_models"] if m["recommended"]
+        {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+        for exp in recs["recommended_experiments"] if exp["recommended"]
     ]
 
     if not experiments:
-        print("\n✗ Error: No recommended models found. Cannot create finetuning job.")
+        print("\n✗ Error: No recommended experiments found. Cannot create finetuning job.")
         exit(1)
 
-    result = api("/api/v1/public/finetuning/create", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "name": "Test Job", "reasoning": False, "experiments": experiments})
+    result = api("/api/v1/public/finetuning/create", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "name": "Test Job", "experiments": experiments})
     job_id = result["job_id"]
     print(f"   ✓ Job: {job_id}\n")
 
