@@ -1,0 +1,7 @@
+---
+title: Add Trace to Dataset
+authMethod: "bearer"
+openapi: POST /api/v1/traces/{id}/addToDataset
+tryIt: true
+description: "Add a trace to a dataset, enabling continuous fine-tuning with fresh, real-world data. If the trace score is above a threshold, a positive datapoint is added; if too low, a new positive datapoint is generated based on user feedback."
+---

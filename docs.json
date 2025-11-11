@@ -217,8 +217,11 @@
           {
             "group": "Traces API",
             "pages": [
+              "api-reference/traces/post-traces",
               "api-reference/traces/get-trace",
-              "api-reference/traces/post-traces"
+              "api-reference/traces/put-trace",
+              "api-reference/traces/delete-trace",
+              "api-reference/traces/post-trace-add-to-dataset"
             ]
           }
         ]
@@ -239,7 +242,7 @@
     "dark": "/images/logos/White.svg"
   },
   "api": {
-    "openapi": "https://studio.premai.io/api/openapi.json",
+    "openapi": "openapi.json",
     "examples": {
       "languages": ["curl", "python", "javascript"],
       "defaults": "required"
