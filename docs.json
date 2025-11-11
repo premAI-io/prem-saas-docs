@@ -63,8 +63,7 @@
                 "group": "Guides",
                 "icon": "newspaper",
                 "pages": [
-                  "guides/finetuning/lora-finetuning",
-                  "guides/finetuning/choose-reason-vs-non-reason"
+                  "guides/finetuning/lora-finetuning"
                 ]
               }
             ]
