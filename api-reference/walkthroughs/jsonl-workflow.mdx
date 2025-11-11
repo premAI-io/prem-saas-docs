@@ -14,11 +14,16 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 
   <CodeGroup>
   ```ts TypeScript
-  const { project_id } = await api('/api/v1/public/projects/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/projects/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ name: 'Test Project', goal: 'Test finetuning' })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { project_id } = await res.json();
   ```
   ```python Python
   response = requests.post(
@@ -45,10 +50,13 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   const jsonlFile = file('sample_data.jsonl');
   formData.append('file', jsonlFile, 'sample_data.jsonl');
 
-  const { dataset_id } = await api('/api/v1/public/datasets/create-from-jsonl', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/datasets/create-from-jsonl', {
     method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
     body: formData
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { dataset_id } = await res.json();
   ```
   ```python Python
   with open('sample_data.jsonl', 'rb') as f:
@@ -76,7 +84,11 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   let dataset;
   do {
     await sleep(2000);
-    dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+    const res = await fetch(`https://studio.premai.io/api/v1/public/datasets/${dataset_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    dataset = await res.json();
   } while (dataset.status === 'processing');
   ```
   ```python Python
@@ -101,11 +113,16 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 
   <CodeGroup>
   ```ts TypeScript
-  const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ dataset_id, split_percentage: 80 })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { snapshot_id } = await res.json();
   ```
   ```python Python
   response = requests.post(
@@ -126,16 +143,24 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 
   <CodeGroup>
   ```ts TypeScript
-  await api('/api/v1/public/recommendations/generate', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ snapshot_id })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
 
   let recs;
   do {
     await sleep(5000);
-    recs = await api(`/api/v1/public/recommendations/${snapshot_id}`);
+    const res2 = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
+    recs = await res2.json();
   } while (recs.status === 'processing');
   ```
   ```python Python
@@ -171,11 +196,16 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
     .filter((e: any) => e.recommended)
     .map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
-  const { job_id } = await api('/api/v1/public/finetuning/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ snapshot_id, name: 'Test Job', experiments })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { job_id } = await res.json();
   ```
   ```python Python
   experiments = [
@@ -203,7 +233,11 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```ts TypeScript
   for (let i = 0; i < 30; i++) {
     await sleep(10000);
-    const job = await api(`/api/v1/public/finetuning/${job_id}`);
+    const res = await fetch(`https://studio.premai.io/api/v1/public/finetuning/${job_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    const job = await res.json();
     console.log(`Status: ${job.status}`);
     job.experiments.forEach((e: any) => {
       console.log(`  - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
@@ -253,19 +287,6 @@ if (!API_KEY) {
 	process.exit(1);
 }
 
-async function api(endpoint: string, options: any = {}): Promise<any> {
-	const res = await fetch(`https://studio.premai.io${endpoint}`, {
-		...options,
-		headers: { Authorization: `Bearer ${API_KEY}`, ...options.headers },
-	});
-	if (!res.ok) {
-		const err: any = await res.json().catch(() => ({}));
-		const errorMsg = typeof err.error === 'string' ? err.error : JSON.stringify(err);
-		throw new Error(`${res.status}: ${errorMsg}`);
-	}
-	return res.json();
-}
-
 function sleep(ms: number) {
 	return new Promise((r) => setTimeout(r, ms));
 }
@@ -275,11 +296,16 @@ async function main() {
 
 	// 1. Create project
 	console.log('1. Creating project...');
-	const { project_id } = await api('/api/v1/public/projects/create', {
+	const res1 = await fetch('https://studio.premai.io/api/v1/public/projects/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
 		body: JSON.stringify({ name: 'Test Project', goal: 'Test finetuning' }),
 	});
+	if (!res1.ok) throw new Error(`${res1.status}: ${await res1.text()}`);
+	const { project_id } = await res1.json();
 	console.log(`   ✓ Project: ${project_id}\n`);
 
 	// 2. Upload JSONL
@@ -290,10 +316,13 @@ async function main() {
 	const jsonlFile = file('sample_data.jsonl');
 	formData.append('file', jsonlFile, 'sample_data.jsonl');
 
-	const { dataset_id } = await api('/api/v1/public/datasets/create-from-jsonl', {
+	const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-from-jsonl', {
 		method: 'POST',
+		headers: { 'Authorization': `Bearer ${API_KEY}` },
 		body: formData,
 	});
+	if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
+	const { dataset_id } = await res2.json();
 	console.log(`   ✓ Dataset: ${dataset_id}`);
 
 	// Wait for dataset
@@ -301,31 +330,48 @@ async function main() {
 	let dataset;
 	do {
 		await sleep(2000);
-		dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/datasets/${dataset_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		dataset = await res.json();
 	} while (dataset.status === 'processing');
 	console.log(`   ✓ Ready: ${dataset.datapoints_count} datapoints\n`);
 
 	// 3. Create snapshot
 	console.log('3. Creating snapshot...');
-	const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+	const res3 = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
 		body: JSON.stringify({ dataset_id, split_percentage: 80 }),
 	});
+	if (!res3.ok) throw new Error(`${res3.status}: ${await res3.text()}`);
+	const { snapshot_id } = await res3.json();
 	console.log(`   ✓ Snapshot: ${snapshot_id}\n`);
 
 	// 4. Generate recommendations
 	console.log('4. Generating recommendations...');
-	await api('/api/v1/public/recommendations/generate', {
+	const res4 = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
 		body: JSON.stringify({ snapshot_id }),
 	});
+	if (!res4.ok) throw new Error(`${res4.status}: ${await res4.text()}`);
 
 	let recs;
 	do {
 		await sleep(5000);
-		recs = await api(`/api/v1/public/recommendations/${snapshot_id}`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		recs = await res.json();
 	} while (recs.status === 'processing');
 
 	console.log(`   ✓ Recommended experiments:`);
@@ -347,18 +393,27 @@ async function main() {
 		process.exit(1);
 	}
 
-	const { job_id } = await api('/api/v1/public/finetuning/create', {
+	const res5 = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
 		body: JSON.stringify({ snapshot_id, name: 'Test Job', experiments }),
 	});
+	if (!res5.ok) throw new Error(`${res5.status}: ${await res5.text()}`);
+	const { job_id } = await res5.json();
 	console.log(`   ✓ Job: ${job_id}\n`);
 
 	// 6. Monitor (5 minutes max)
 	console.log('6. Monitoring job...');
 	for (let i = 0; i < 30; i++) {
 		await sleep(10000);
-		const job = await api(`/api/v1/public/finetuning/${job_id}`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/finetuning/${job_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		const job = await res.json();
 		console.log(`   Status: ${job.status}`);
 		job.experiments.forEach((e: any) => {
 			console.log(`     - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
