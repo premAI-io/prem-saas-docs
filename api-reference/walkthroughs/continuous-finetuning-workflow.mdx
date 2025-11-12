@@ -10,17 +10,18 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
 - Use your fine-tuned model for inference
 - Automatically evaluate model responses using a judge model (Claude 4.5 Sonnet)
 - Create traces with scores and feedback
-- Add high-quality traces to your dataset
-- Create new snapshots and launch iterative fine-tuning jobs
+- Add **ALL** traces to your dataset (both successes and failures)
+- Let the API automatically improve low-quality outputs using judge feedback
+- Create new snapshots and launch iterative fine-tuning jobs that fix model weaknesses
 
-**Why This Matters**: Models improve over time when you continuously gather production data, evaluate it, and use the best examples for further training. This creates a virtuous cycle where your model gets better with each iteration.
+**Why This Matters**: Models improve over time when you continuously gather production data, evaluate it, and learn from **both successes and failures**. Low-scoring responses identify where your model is weak - these are automatically corrected and used for training, so your model gets better at exactly what it struggles with. This creates a virtuous cycle of targeted improvement.
 
 **What You'll Build**: A continuous fine-tuning loop that:
 1. Generates responses from your fine-tuned model **using domain-specific test prompts**
-2. Uses an AI judge to evaluate response quality
+2. Uses an AI judge to evaluate response quality (0-1 scale: feedback → reasoning → score)
 3. Creates traces with structured feedback
-4. Adds approved traces to your dataset
-5. Triggers a new fine-tuning job with fresh data
+4. Adds **ALL** traces to your dataset (both high and low-scoring) - low-scoring traces are automatically improved by the API
+5. Triggers a new fine-tuning job that learns from both successes AND corrected failures
 
 <Warning>
   **CRITICAL**: This workflow requires you to provide test prompts that match your fine-tuned model's domain. Generic prompts will produce useless results. For example:
@@ -41,37 +42,25 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
 
 <Steps>
   <Step>
-  # Define initial parameters from previous workflow
+  # Define initial parameters and fetch dataset from project
 
   <CodeGroup>
   ```ts TypeScript
-  // ============================================
-  // IMPORTANT: Replace these with YOUR actual IDs
-  // from your previous fine-tuning workflow
-  // ============================================
-
-  // From your previous workflow (e.g., JSONL, PDF, or YouTube workflow)
-  const PROJECT_ID = 'your-project-id-here';           // The project ID you created
-  const DATASET_ID = 'your-dataset-id-here';           // Your existing dataset ID
-  const FINETUNED_MODEL_ALIAS = 'your-model-alias';    // Your fine-tuned model alias (e.g., 'my-invoice-model-v1')
-
-  // Judge model for evaluation (using Claude 4.5 Sonnet)
+  const PROJECT_ID = 'your-project-id-here';
+  const FINETUNED_MODEL_ALIAS = 'your-model-alias';
   const JUDGE_MODEL = 'claude-4.5-sonnet';
 
-  // ============================================
-  // CRITICAL: Adapt these test prompts to YOUR fine-tuned model!
-  // ============================================
-  // These prompts MUST match the domain of your fine-tuned model.
-  //
-  // Examples based on previous workflows:
-  // - If you did the INVOICE workflow: test with invoice extraction prompts
-  // - If you did the YOUTUBE workflow: test with stock/investment analysis prompts
-  // - If you did custom JSONL: test with prompts matching your dataset domain
-  //
-  // BAD example (generic, useless): "Explain machine learning"
-  // GOOD example for invoice model: "Extract invoice details from: [invoice text]"
-  // GOOD example for stock model: "Analyze the investment risks mentioned in [transcript]"
-  //
+  // Fetch dataset from project
+  const projectRes = await fetch(`https://studio.premai.io/api/v1/public/projects/${PROJECT_ID}`, {
+    headers: { 'Authorization': `Bearer ${API_KEY}` }
+  });
+  if (!projectRes.ok) throw new Error(`Failed to fetch project: ${projectRes.status}`);
+  const project = await projectRes.json();
+  const dataset = project.project.children.find((child: any) => child.type === 'dataset');
+  if (!dataset) throw new Error('No dataset found in project');
+  const DATASET_ID = dataset.id;
+
+  // CRITICAL: Replace with prompts matching your model's domain!
   const TEST_PROMPTS = [
     'YOUR_FIRST_TEST_PROMPT_HERE - MUST match your model domain!',
     'YOUR_SECOND_TEST_PROMPT_HERE - MUST match your model domain!',
@@ -79,33 +68,18 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
   ];
   ```
   ```python Python
-  # ============================================
-  # IMPORTANT: Replace these with YOUR actual IDs
-  # from your previous fine-tuning workflow
-  # ============================================
-
-  # From your previous workflow (e.g., JSONL, PDF, or YouTube workflow)
-  PROJECT_ID = "your-project-id-here"           # The project ID you created
-  DATASET_ID = "your-dataset-id-here"           # Your existing dataset ID
-  FINETUNED_MODEL_ALIAS = "your-model-alias"    # Your fine-tuned model alias (e.g., 'my-invoice-model-v1')
-
-  # Judge model for evaluation (using Claude 4.5 Sonnet)
+  PROJECT_ID = "your-project-id-here"
+  FINETUNED_MODEL_ALIAS = "your-model-alias"
   JUDGE_MODEL = "claude-4.5-sonnet"
 
-  # ============================================
-  # CRITICAL: Adapt these test prompts to YOUR fine-tuned model!
-  # ============================================
-  # These prompts MUST match the domain of your fine-tuned model.
-  #
-  # Examples based on previous workflows:
-  # - If you did the INVOICE workflow: test with invoice extraction prompts
-  # - If you did the YOUTUBE workflow: test with stock/investment analysis prompts
-  # - If you did custom JSONL: test with prompts matching your dataset domain
-  #
-  # BAD example (generic, useless): "Explain machine learning"
-  # GOOD example for invoice model: "Extract invoice details from: [invoice text]"
-  # GOOD example for stock model: "Analyze the investment risks mentioned in [transcript]"
-  #
+  # Fetch dataset from project
+  project = api(f"/api/v1/public/projects/{PROJECT_ID}")
+  dataset = next((child for child in project["project"]["children"] if child["type"] == "dataset"), None)
+  if not dataset:
+      raise Exception("No dataset found in project")
+  DATASET_ID = dataset["id"]
+
+  # CRITICAL: Replace with prompts matching your model's domain!
   TEST_PROMPTS = [
       "YOUR_FIRST_TEST_PROMPT_HERE - MUST match your model domain!",
       "YOUR_SECOND_TEST_PROMPT_HERE - MUST match your model domain!",
@@ -113,15 +87,6 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
   ]
   ```
   </CodeGroup>
-
-  **EXPLICIT REQUIREMENT**: You MUST replace `PROJECT_ID`, `DATASET_ID`, and `FINETUNED_MODEL_ALIAS` with the actual values from your previous workflow. These are **NOT** placeholder values - they must be real IDs from your existing project.
-
-  **CRITICAL: TEST_PROMPTS MUST BE CUSTOMIZED!** The placeholder test prompts are useless! You **MUST** replace them with prompts that match your fine-tuned model's domain:
-  - **Invoice extraction model?** → Use invoice text as prompts
-  - **Stock analysis model?** → Use financial questions/transcripts as prompts
-  - **Custom domain model?** → Use prompts from YOUR specific use case
-
-  The test prompts determine what gets evaluated and added to your dataset - if they don't match your model's domain, the entire continuous fine-tuning loop will be pointless!
   </Step>
 
   <Step>
@@ -129,8 +94,6 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
 
   <CodeGroup>
   ```ts TypeScript
-  console.log('\n=== Step 1: Generating responses from fine-tuned model ===\n');
-
   const modelResponses = [];
 
   for (const prompt of TEST_PROMPTS) {
@@ -142,26 +105,18 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
       },
       body: JSON.stringify({
         project_id: PROJECT_ID,
-        model: FINETUNED_MODEL_ALIAS,  // Using YOUR fine-tuned model
-        messages: [
-          { role: 'user', content: prompt }
-        ]
+        model: FINETUNED_MODEL_ALIAS,
+        messages: [{ role: 'user', content: prompt }]
       })
     });
 
     if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
     const response = await res.json();
-    const modelAnswer = response.choices[0].message.content;
-
     modelResponses.push({
       prompt,
-      answer: modelAnswer
+      answer: response.choices[0].message.content
     });
-
-    console.log(`✓ Generated response for: "${prompt.substring(0, 50)}..."`);
   }
-
-  console.log(`\n✓ Generated ${modelResponses.length} responses\n`);
   ```
   ```python Python
   import requests
@@ -190,8 +145,6 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
       return response.json()
 
 
-  print("\n=== Step 1: Generating responses from fine-tuned model ===\n")
-
   model_responses = []
 
   for prompt in TEST_PROMPTS:
@@ -201,52 +154,38 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
           headers={"Content-Type": "application/json"},
           json={
               "project_id": PROJECT_ID,
-              "model": FINETUNED_MODEL_ALIAS,  # Using YOUR fine-tuned model
-              "messages": [
-                  {"role": "user", "content": prompt}
-              ]
+              "model": FINETUNED_MODEL_ALIAS,
+              "messages": [{"role": "user", "content": prompt}]
           }
       )
-
-      model_answer = response["choices"][0]["message"]["content"]
-
       model_responses.append({
           "prompt": prompt,
-          "answer": model_answer
+          "answer": response["choices"][0]["message"]["content"]
       })
-
-      print(f"✓ Generated response for: \"{prompt[:50]}...\"")
-
-  print(f"\n✓ Generated {len(model_responses)} responses\n")
   ```
   </CodeGroup>
-
-  Generate responses from your fine-tuned model using test prompts. These responses will be evaluated by the judge model in the next step.
   </Step>
 
   <Step>
-  # Use Claude 4.5 Sonnet as judge to evaluate responses
+  # Evaluate responses with judge model
 
   <CodeGroup>
   ```ts TypeScript
-  console.log('=== Step 2: Evaluating responses with Claude 4.5 Sonnet ===\n');
-
   const evaluations = [];
 
   for (const item of modelResponses) {
-    // Create evaluation prompt for the judge
-    const judgePrompt = `You are an expert AI evaluator. Evaluate the following response on a scale of 0-10.
+    const judgePrompt = `You are an expert AI evaluator. Evaluate the following response.
 
-  User Question: ${item.prompt}
+User Question: ${item.prompt}
 
-  Model Response: ${item.answer}
+Model Response: ${item.answer}
 
-  Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
-  {
-    "score": <number between 0-10>,
-    "feedback": "<detailed explanation of the score, highlighting strengths and weaknesses>",
-    "reasoning": "<why you gave this specific score>"
-  }`;
+Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
+{
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
+}`;
 
     const res = await fetch('https://studio.premai.io/api/v1/chat/completions', {
       method: 'POST',
@@ -256,11 +195,9 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
       },
       body: JSON.stringify({
         project_id: PROJECT_ID,
-        model: JUDGE_MODEL,  // Using Claude 4.5 Sonnet as judge
-        messages: [
-          { role: 'user', content: judgePrompt }
-        ],
-        temperature: 0.1  // Low temperature for consistent evaluation
+        model: JUDGE_MODEL,
+        messages: [{ role: 'user', content: judgePrompt }],
+        temperature: 0.1
       })
     });
 
@@ -268,17 +205,13 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
     const response = await res.json();
     const judgeResponse = response.choices[0].message.content;
 
-    // Parse the JSON response from the judge
     let evaluation;
     try {
-      // Try to extract JSON from the response
       const jsonMatch = judgeResponse.match(/\{[\s\S]*\}/);
       evaluation = JSON.parse(jsonMatch ? jsonMatch[0] : judgeResponse);
     } catch (e) {
-      // Fallback if JSON parsing fails
-      console.warn(`Warning: Could not parse judge response for prompt: ${item.prompt}`);
       evaluation = {
-        score: 5,
+        score: 0.5,
         feedback: judgeResponse,
         reasoning: 'Could not parse structured evaluation'
       };
@@ -291,31 +224,24 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
       feedback: evaluation.feedback,
       reasoning: evaluation.reasoning
     });
-
-    console.log(`✓ Evaluated: "${item.prompt.substring(0, 40)}..." - Score: ${evaluation.score}/10`);
   }
-
-  console.log(`\n✓ Evaluated ${evaluations.length} responses\n`);
   ```
   ```python Python
-  print("=== Step 2: Evaluating responses with Claude 4.5 Sonnet ===\n")
-
   evaluations = []
 
   for item in model_responses:
-      # Create evaluation prompt for the judge
-      judge_prompt = f"""You are an expert AI evaluator. Evaluate the following response on a scale of 0-10.
+      judge_prompt = f"""You are an expert AI evaluator. Evaluate the following response.
 
-  User Question: {item['prompt']}
+User Question: {item['prompt']}
 
-  Model Response: {item['answer']}
+Model Response: {item['answer']}
 
-  Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
-  {{
-    "score": <number between 0-10>,
-    "feedback": "<detailed explanation of the score, highlighting strengths and weaknesses>",
-    "reasoning": "<why you gave this specific score>"
-  }}"""
+Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
+{{
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
+}}"""
 
       response = api(
           "/api/v1/chat/completions",
@@ -323,27 +249,21 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
           headers={"Content-Type": "application/json"},
           json={
               "project_id": PROJECT_ID,
-              "model": JUDGE_MODEL,  # Using Claude 4.5 Sonnet as judge
-              "messages": [
-                  {"role": "user", "content": judge_prompt}
-              ],
-              "temperature": 0.1  # Low temperature for consistent evaluation
+              "model": JUDGE_MODEL,
+              "messages": [{"role": "user", "content": judge_prompt}],
+              "temperature": 0.1
           }
       )
 
       judge_response = response["choices"][0]["message"]["content"]
 
-      # Parse the JSON response from the judge
       try:
-          # Try to extract JSON from the response
           import re
           json_match = re.search(r'\{[\s\S]*\}', judge_response)
           evaluation = json.loads(json_match.group(0) if json_match else judge_response)
-      except Exception as e:
-          # Fallback if JSON parsing fails
-          print(f"Warning: Could not parse judge response for prompt: {item['prompt']}")
+      except Exception:
           evaluation = {
-              "score": 5,
+              "score": 0.5,
               "feedback": judge_response,
               "reasoning": "Could not parse structured evaluation"
           }
@@ -355,23 +275,15 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
           "feedback": evaluation["feedback"],
           "reasoning": evaluation["reasoning"]
       })
-
-      print(f"✓ Evaluated: \"{item['prompt'][:40]}...\" - Score: {evaluation['score']}/10")
-
-  print(f"\n✓ Evaluated {len(evaluations)} responses\n")
   ```
   </CodeGroup>
-
-  Use Claude 4.5 Sonnet to automatically evaluate each response. The judge provides a score (0-10), detailed feedback, and reasoning for the evaluation.
   </Step>
 
   <Step>
-  # Create traces with scores and feedback
+  # Create traces
 
   <CodeGroup>
   ```ts TypeScript
-  console.log('=== Step 3: Creating traces with evaluation data ===\n');
-
   const traceIds = [];
 
   for (const evaluation of evaluations) {
@@ -383,7 +295,7 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
       },
       body: JSON.stringify({
         project_id: PROJECT_ID,
-        model_id: FINETUNED_MODEL_ALIAS,  // IMPORTANT: Using your fine-tuned model alias
+        model_id: FINETUNED_MODEL_ALIAS,
         input: evaluation.prompt,
         output: evaluation.answer,
         score: evaluation.score,
@@ -393,16 +305,10 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
 
     if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
     const trace = await res.json();
-
     traceIds.push(trace.id);
-    console.log(`✓ Created trace ${trace.id} - Score: ${evaluation.score}/10`);
   }
-
-  console.log(`\n✓ Created ${traceIds.length} traces\n`);
   ```
   ```python Python
-  print("=== Step 3: Creating traces with evaluation data ===\n")
-
   trace_ids = []
 
   for evaluation in evaluations:
@@ -412,113 +318,49 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
           headers={"Content-Type": "application/json"},
           json={
               "project_id": PROJECT_ID,
-              "model_id": FINETUNED_MODEL_ALIAS,  # IMPORTANT: Using your fine-tuned model alias
+              "model_id": FINETUNED_MODEL_ALIAS,
               "input": evaluation["prompt"],
               "output": evaluation["answer"],
               "score": evaluation["score"],
               "feedback": f"{evaluation['feedback']}\n\nReasoning: {evaluation['reasoning']}"
           }
       )
-
       trace_ids.append(trace["id"])
-      print(f"✓ Created trace {trace['id']} - Score: {evaluation['score']}/10")
-
-  print(f"\n✓ Created {len(trace_ids)} traces\n")
   ```
   </CodeGroup>
-
-  Create traces for each evaluated response. The trace includes:
-  - **project_id**: Your project ID (from step 1)
-  - **model_id**: Your fine-tuned model alias (from step 1)
-  - **input**: The user prompt
-  - **output**: The model's response
-  - **score**: The judge's score (0-10)
-  - **feedback**: Detailed evaluation feedback from the judge
   </Step>
 
   <Step>
-  # Add high-scoring traces to the dataset
+  # Add all traces to dataset
 
   <CodeGroup>
   ```ts TypeScript
-  console.log('=== Step 4: Adding traces to dataset ===\n');
-
-  // Filter traces with score >= 7 (high quality responses)
-  const highQualityTraces = traceIds.filter((traceId, index) => {
-    return evaluations[index].score >= 7;
-  });
-
-  console.log(`Selected ${highQualityTraces.length} high-quality traces (score >= 7) out of ${traceIds.length} total traces\n`);
-
-  const addedTraces = [];
-
-  for (const traceId of highQualityTraces) {
+  for (const traceId of traceIds) {
     const res = await fetch(`https://studio.premai.io/api/v1/traces/${traceId}/addToDataset`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        dataset_id: DATASET_ID  // IMPORTANT: Using your existing dataset ID
-      })
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
     });
-
-    if (!res.ok) {
-      console.warn(`Warning: Failed to add trace ${traceId}: ${await res.text()}`);
-      continue;
-    }
-
-    addedTraces.push(traceId);
-    console.log(`✓ Added trace ${traceId} to dataset ${DATASET_ID}`);
+    if (!res.ok) throw new Error(`Failed to add trace: ${res.status}`);
   }
-
-  console.log(`\n✓ Successfully added ${addedTraces.length} traces to dataset\n`);
   ```
   ```python Python
-  print("=== Step 4: Adding traces to dataset ===\n")
-
-  # Filter traces with score >= 7 (high quality responses)
-  high_quality_traces = [
-      trace_ids[i] for i, evaluation in enumerate(evaluations)
-      if evaluation["score"] >= 7
-  ]
-
-  print(f"Selected {len(high_quality_traces)} high-quality traces (score >= 7) out of {len(trace_ids)} total traces\n")
-
-  added_traces = []
-
-  for trace_id in high_quality_traces:
-      try:
-          api(
-              f"/api/v1/traces/{trace_id}/addToDataset",
-              method="POST",
-              headers={"Content-Type": "application/json"},
-              json={
-                  "dataset_id": DATASET_ID  # IMPORTANT: Using your existing dataset ID
-              }
-          )
-
-          added_traces.append(trace_id)
-          print(f"✓ Added trace {trace_id} to dataset {DATASET_ID}")
-      except Exception as e:
-          print(f"Warning: Failed to add trace {trace_id}: {e}")
-          continue
-
-  print(f"\n✓ Successfully added {len(added_traces)} traces to dataset\n")
+  for trace_id in trace_ids:
+      response = requests.post(
+          f"https://studio.premai.io/api/v1/traces/{trace_id}/addToDataset",
+          headers={"Authorization": f"Bearer {API_KEY}"}
+      )
+      response.raise_for_status()
   ```
   </CodeGroup>
 
-  Add high-quality traces (score >= 7) to your existing dataset. This enriches your training data with new, validated examples. Each trace is added individually using the `addToDataset` endpoint with your **DATASET_ID**.
+  Add all traces to dataset. Low-scoring traces are automatically improved by the API using judge feedback.
   </Step>
 
   <Step>
-  # Create a new snapshot from the enriched dataset
+  # Create snapshot
 
   <CodeGroup>
   ```ts TypeScript
-  console.log('=== Step 5: Creating new snapshot ===\n');
-
   const res = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
     method: 'POST',
     headers: {
@@ -526,44 +368,30 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      dataset_id: DATASET_ID,  // IMPORTANT: Using your existing dataset ID (now enriched with traces)
+      dataset_id: DATASET_ID,
       split_percentage: 80
     })
   });
-
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
   const { snapshot_id } = await res.json();
-
-  console.log(`✓ Created new snapshot: ${snapshot_id}\n`);
   ```
   ```python Python
-  print("=== Step 5: Creating new snapshot ===\n")
-
   result = api(
       "/api/v1/public/snapshots/create",
       method="POST",
       headers={"Content-Type": "application/json"},
-      json={
-          "dataset_id": DATASET_ID,  # IMPORTANT: Using your existing dataset ID (now enriched with traces)
-          "split_percentage": 80
-      }
+      json={"dataset_id": DATASET_ID, "split_percentage": 80}
   )
-
   snapshot_id = result["snapshot_id"]
-  print(f"✓ Created new snapshot: {snapshot_id}\n")
   ```
   </CodeGroup>
-
-  Create a new snapshot from your dataset, which now includes the high-quality traces. This snapshot will be used for the next round of fine-tuning.
   </Step>
 
   <Step>
-  # Generate recommendations for the new snapshot
+  # Generate recommendations
 
   <CodeGroup>
   ```ts TypeScript
-  console.log('=== Step 6: Generating recommendations ===\n');
-
   const res = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
     method: 'POST',
     headers: {
@@ -572,10 +400,8 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
     },
     body: JSON.stringify({ snapshot_id })
   });
-
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
 
-  // Poll for recommendations
   let recs;
   do {
     await sleep(5000);
@@ -585,48 +411,29 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
     if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
     recs = await res2.json();
   } while (recs.status === 'processing');
-
-  console.log('✓ Recommendations ready\n');
   ```
   ```python Python
-  print("=== Step 6: Generating recommendations ===\n")
+  api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id})
 
-  api(
-      "/api/v1/public/recommendations/generate",
-      method="POST",
-      headers={"Content-Type": "application/json"},
-      json={"snapshot_id": snapshot_id}
-  )
-
-  # Poll for recommendations
   while True:
       time.sleep(5)
       recs = api(f"/api/v1/public/recommendations/{snapshot_id}")
       if recs["status"] != "processing":
           break
-
-  print("✓ Recommendations ready\n")
   ```
   </CodeGroup>
-
-  Generate and wait for model recommendations based on the new snapshot.
   </Step>
 
   <Step>
-  # Launch new fine-tuning job with enriched data
+  # Launch fine-tuning job
 
   <CodeGroup>
   ```ts TypeScript
-  console.log('=== Step 7: Launching new fine-tuning job ===\n');
-
   const experiments = recs.recommended_experiments
     .filter((e: any) => e.recommended)
     .map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
-  if (experiments.length === 0) {
-    console.error('✗ No recommended experiments found');
-    process.exit(1);
-  }
+  if (experiments.length === 0) throw new Error('No recommended experiments found');
 
   const res = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
     method: 'POST',
@@ -640,25 +447,17 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
       experiments
     })
   });
-
   if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
   const { job_id } = await res.json();
-
-  console.log(`✓ Fine-tuning job started: ${job_id}\n`);
-  console.log('✓ Continuous fine-tuning cycle complete!\n');
-  console.log('Your model will be improved with the new high-quality traces.\n');
   ```
   ```python Python
-  print("=== Step 7: Launching new fine-tuning job ===\n")
-
   experiments = [
       {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
       for exp in recs["recommended_experiments"] if exp["recommended"]
   ]
 
   if not experiments:
-      print("✗ No recommended experiments found")
-      exit(1)
+      raise Exception("No recommended experiments found")
 
   from datetime import datetime
   result = api(
@@ -671,16 +470,9 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
           "experiments": experiments
       }
   )
-
   job_id = result["job_id"]
-
-  print(f"✓ Fine-tuning job started: {job_id}\n")
-  print("✓ Continuous fine-tuning cycle complete!\n")
-  print("Your model will be improved with the new high-quality traces.\n")
   ```
   </CodeGroup>
-
-  Launch a new fine-tuning job using the recommended experiments. Your model will now be trained on the original data plus the new high-quality traces, creating an improved version.
   </Step>
 </Steps>
 
@@ -690,35 +482,16 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
 ```ts TypeScript
 #!/usr/bin/env bun
 
-/**
- * Continuous Fine-Tuning with Traces Workflow
- *
- * Prerequisites: You must have completed a previous workflow and have:
- * - PROJECT_ID: Your existing project ID
- * - DATASET_ID: Your existing dataset ID
- * - FINETUNED_MODEL_ALIAS: Your fine-tuned model alias
- */
-
 const API_KEY = process.env.API_KEY;
-
-// ============================================
-// IMPORTANT: Replace these with YOUR actual IDs
-// ============================================
 const PROJECT_ID = 'your-project-id-here';
-const DATASET_ID = 'your-dataset-id-here';
 const FINETUNED_MODEL_ALIAS = 'your-model-alias';
 const JUDGE_MODEL = 'claude-4.5-sonnet';
 
-// ============================================
-// CRITICAL: Replace with prompts matching YOUR model domain!
-// ============================================
-// Invoice model example: test with actual invoice text
-// Stock model example: test with financial analysis questions
-// Your domain: YOUR specific use case prompts
+// CRITICAL: Replace with prompts matching your model's domain!
 const TEST_PROMPTS = [
-	'YOUR_FIRST_TEST_PROMPT_HERE - MUST match your model domain!',
-	'YOUR_SECOND_TEST_PROMPT_HERE - MUST match your model domain!',
-	'YOUR_THIRD_TEST_PROMPT_HERE - MUST match your model domain!'
+	'YOUR_FIRST_TEST_PROMPT_HERE',
+	'YOUR_SECOND_TEST_PROMPT_HERE',
+	'YOUR_THIRD_TEST_PROMPT_HERE'
 ];
 
 if (!API_KEY) {
@@ -731,16 +504,16 @@ function sleep(ms: number) {
 }
 
 async function main() {
-	console.log('\n=== Continuous Fine-Tuning with Traces ===\n');
-	console.log(`Project ID: ${PROJECT_ID}`);
-	console.log(`Dataset ID: ${DATASET_ID}`);
-	console.log(`Fine-tuned Model: ${FINETUNED_MODEL_ALIAS}\n`);
-
-	// Step 1: Generate responses from fine-tuned model
-	console.log('=== Step 1: Generating responses from fine-tuned model ===\n');
+	const projectRes = await fetch(`https://studio.premai.io/api/v1/public/projects/${PROJECT_ID}`, {
+		headers: { 'Authorization': `Bearer ${API_KEY}` }
+	});
+	if (!projectRes.ok) throw new Error(`Failed to fetch project: ${projectRes.status}`);
+	const project = await projectRes.json();
+	const dataset = project.project.children.find((child: any) => child.type === 'dataset');
+	if (!dataset) throw new Error('No dataset found in project');
+	const DATASET_ID = dataset.id;
 
 	const modelResponses = [];
-
 	for (const prompt of TEST_PROMPTS) {
 		const res = await fetch('https://studio.premai.io/api/v1/chat/completions', {
 			method: 'POST',
@@ -754,24 +527,15 @@ async function main() {
 				messages: [{ role: 'user', content: prompt }]
 			})
 		});
-
 		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
 		const response = await res.json();
-		const modelAnswer = response.choices[0].message.content;
-
-		modelResponses.push({ prompt, answer: modelAnswer });
-		console.log(`✓ Generated response for: "${prompt.substring(0, 50)}..."`);
+		modelResponses.push({ prompt, answer: response.choices[0].message.content });
 	}
-
-	console.log(`\n✓ Generated ${modelResponses.length} responses\n`);
-
-	// Step 2: Evaluate responses with judge model
-	console.log('=== Step 2: Evaluating responses with Claude 4.5 Sonnet ===\n');
 
 	const evaluations = [];
 
 	for (const item of modelResponses) {
-		const judgePrompt = `You are an expert AI evaluator. Evaluate the following response on a scale of 0-10.
+		const judgePrompt = `You are an expert AI evaluator. Evaluate the following response.
 
 User Question: ${item.prompt}
 
@@ -779,9 +543,9 @@ Model Response: ${item.answer}
 
 Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
 {
-  "score": <number between 0-10>,
-  "feedback": "<detailed explanation of the score, highlighting strengths and weaknesses>",
-  "reasoning": "<why you gave this specific score>"
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
 }`;
 
 		const res = await fetch('https://studio.premai.io/api/v1/chat/completions', {
@@ -823,7 +587,7 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
 			reasoning: evaluation.reasoning
 		});
 
-		console.log(`✓ Evaluated: "${item.prompt.substring(0, 40)}..." - Score: ${evaluation.score}/10`);
+		console.log(`✓ Evaluated: "${item.prompt.substring(0, 40)}..." - Score: ${evaluation.score}`);
 	}
 
 	console.log(`\n✓ Evaluated ${evaluations.length} responses\n`);
@@ -854,30 +618,28 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
 		const trace = await res.json();
 
 		traceIds.push(trace.id);
-		console.log(`✓ Created trace ${trace.id} - Score: ${evaluation.score}/10`);
+		console.log(`✓ Created trace ${trace.id} - Score: ${evaluation.score}`);
 	}
 
 	console.log(`\n✓ Created ${traceIds.length} traces\n`);
 
-	// Step 4: Add high-scoring traces to dataset
-	console.log('=== Step 4: Adding traces to dataset ===\n');
-
-	const highQualityTraces = traceIds.filter((traceId, index) => {
-		return evaluations[index].score >= 7;
-	});
-
-	console.log(`Selected ${highQualityTraces.length} high-quality traces (score >= 7)\n`);
+	// Step 4: Add ALL traces to dataset (including low-scoring ones!)
+	console.log('=== Step 4: Adding ALL traces to dataset ===\n');
+	console.log('IMPORTANT: Adding ALL traces, including low-scoring ones!');
+	console.log('Low-scoring traces help identify model weaknesses.');
+	console.log('The addToDataset endpoint automatically uses the dataset from the project.\n');
 
 	const addedTraces = [];
 
-	for (const traceId of highQualityTraces) {
+	for (let i = 0; i < traceIds.length; i++) {
+		const traceId = traceIds[i];
+		const score = evaluations[i].score;
+
 		const res = await fetch(`https://studio.premai.io/api/v1/traces/${traceId}/addToDataset`, {
 			method: 'POST',
 			headers: {
-				'Authorization': `Bearer ${API_KEY}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({ dataset_id: DATASET_ID })
+				'Authorization': `Bearer ${API_KEY}`
+			}
 		});
 
 		if (!res.ok) {
@@ -886,7 +648,8 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
 		}
 
 		addedTraces.push(traceId);
-		console.log(`✓ Added trace ${traceId} to dataset`);
+		const quality = score >= 0.7 ? 'high-quality' : 'low-quality (will be improved)';
+		console.log(`✓ Added trace ${traceId} (${quality}, score: ${score}) to dataset`);
 	}
 
 	console.log(`\n✓ Added ${addedTraces.length} traces to dataset\n`);
@@ -982,8 +745,8 @@ Continuous Fine-Tuning with Traces Workflow
 
 Prerequisites: You must have completed a previous workflow and have:
 - PROJECT_ID: Your existing project ID
-- DATASET_ID: Your existing dataset ID
 - FINETUNED_MODEL_ALIAS: Your fine-tuned model alias
+(DATASET_ID is automatically fetched from the project)
 """
 
 import os
@@ -999,7 +762,6 @@ API_KEY = os.getenv("API_KEY")
 # IMPORTANT: Replace these with YOUR actual IDs
 # ============================================
 PROJECT_ID = "your-project-id-here"
-DATASET_ID = "your-dataset-id-here"
 FINETUNED_MODEL_ALIAS = "your-model-alias"
 JUDGE_MODEL = "claude-4.5-sonnet"
 
@@ -1035,10 +797,11 @@ def api(endpoint: str, method: str = "GET", **kwargs):
 
 
 def main():
-    print("\n=== Continuous Fine-Tuning with Traces ===\n")
-    print(f"Project ID: {PROJECT_ID}")
-    print(f"Dataset ID: {DATASET_ID}")
-    print(f"Fine-tuned Model: {FINETUNED_MODEL_ALIAS}\n")
+    project = api(f"/api/v1/public/projects/{PROJECT_ID}")
+    dataset = next((child for child in project["project"]["children"] if child["type"] == "dataset"), None)
+    if not dataset:
+        raise Exception("No dataset found in project")
+    DATASET_ID = dataset["id"]
 
     # Step 1: Generate responses from fine-tuned model
     print("=== Step 1: Generating responses from fine-tuned model ===\n")
@@ -1069,7 +832,7 @@ def main():
     evaluations = []
 
     for item in model_responses:
-        judge_prompt = f"""You are an expert AI evaluator. Evaluate the following response on a scale of 0-10.
+        judge_prompt = f"""You are an expert AI evaluator. Evaluate the following response.
 
 User Question: {item['prompt']}
 
@@ -1077,9 +840,9 @@ Model Response: {item['answer']}
 
 Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
 {{
-  "score": <number between 0-10>,
-  "feedback": "<detailed explanation of the score, highlighting strengths and weaknesses>",
-  "reasoning": "<why you gave this specific score>"
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
 }}"""
 
         response = api(
@@ -1115,7 +878,7 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
             "reasoning": evaluation["reasoning"]
         })
 
-        print(f"✓ Evaluated: \"{item['prompt'][:40]}...\" - Score: {evaluation['score']}/10")
+        print(f"✓ Evaluated: \"{item['prompt'][:40]}...\" - Score: {evaluation['score']}")
 
     print(f"\n✓ Evaluated {len(evaluations)} responses\n")
 
@@ -1140,33 +903,32 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
         )
 
         trace_ids.append(trace["id"])
-        print(f"✓ Created trace {trace['id']} - Score: {evaluation['score']}/10")
+        print(f"✓ Created trace {trace['id']} - Score: {evaluation['score']}")
 
     print(f"\n✓ Created {len(trace_ids)} traces\n")
 
-    # Step 4: Add high-scoring traces to dataset
-    print("=== Step 4: Adding traces to dataset ===\n")
-
-    high_quality_traces = [
-        trace_ids[i] for i, evaluation in enumerate(evaluations)
-        if evaluation["score"] >= 7
-    ]
-
-    print(f"Selected {len(high_quality_traces)} high-quality traces (score >= 7)\n")
+    # Step 4: Add ALL traces to dataset (including low-scoring ones!)
+    print("=== Step 4: Adding ALL traces to dataset ===\n")
+    print("IMPORTANT: Adding ALL traces, including low-scoring ones!")
+    print("Low-scoring traces help identify model weaknesses.")
+    print("The addToDataset endpoint automatically uses the dataset from the project.\n")
 
     added_traces = []
 
-    for trace_id in high_quality_traces:
+    for i, trace_id in enumerate(trace_ids):
+        score = evaluations[i]["score"]
+
         try:
-            api(
-                f"/api/v1/traces/{trace_id}/addToDataset",
-                method="POST",
-                headers={"Content-Type": "application/json"},
-                json={"dataset_id": DATASET_ID}
+            # Note: addToDataset does NOT take parameters - it automatically uses the dataset from the project
+            response = requests.post(
+                f"https://studio.premai.io/api/v1/traces/{trace_id}/addToDataset",
+                headers={"Authorization": f"Bearer {API_KEY}"}
             )
+            response.raise_for_status()
 
             added_traces.append(trace_id)
-            print(f"✓ Added trace {trace_id} to dataset")
+            quality = "high-quality" if score >= 0.7 else "low-quality (will be improved)"
+            print(f"✓ Added trace {trace_id} ({quality}, score: {score}) to dataset")
         except Exception as e:
             print(f"Warning: Failed to add trace {trace_id}")
             continue
@@ -1247,8 +1009,10 @@ if __name__ == "__main__":
 
 ## Key Takeaways
 
-1. **Explicit Prerequisites**: This workflow requires a `PROJECT_ID`, `DATASET_ID`, and `FINETUNED_MODEL_ALIAS` from a previous workflow
-2. **Automated Evaluation**: Uses Claude 4.5 Sonnet as a judge to score responses (0-10 scale)
-3. **Quality Filtering**: Only high-scoring traces (score >= 7) are added to the dataset
-4. **Iterative Improvement**: Each cycle adds new training data, creating progressively better models
-5. **Production-Ready**: Can be automated to run on a schedule, continuously improving your model with real-world data
+1. **Explicit Prerequisites**: This workflow requires a `PROJECT_ID` and `FINETUNED_MODEL_ALIAS` from a previous workflow. The `DATASET_ID` is automatically fetched from the project - no manual input needed!
+2. **Automated Evaluation**: Uses Claude 4.5 Sonnet as a judge to score responses (0-1 scale, where 0 is completely wrong and 1 is perfect)
+3. **Learn from ALL Traces**: **Critical** - Add ALL traces (both high and low-scoring) to the dataset! Low-scoring traces identify weaknesses
+4. **Automatic Correction**: The `addToDataset` endpoint automatically rewrites low-quality outputs using judge feedback, creating corrected training examples
+5. **Structured Evaluation**: The judge provides feedback, reasoning, and then score (in that order) for better evaluation quality
+6. **Targeted Improvement**: Each cycle adds new training data focusing on model weaknesses, creating progressively better models
+7. **Production-Ready**: Can be automated to run on a schedule, continuously improving your model with real-world data
