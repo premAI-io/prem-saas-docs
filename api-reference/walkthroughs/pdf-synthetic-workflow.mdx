@@ -3,68 +3,197 @@ title: "PDF Synthetic Dataset Workflow"
 description: "Generate synthetic Q&A pairs from PDF documents, create snapshots, and launch fine-tuning."
 ---
 
+## Overview
+
+This walkthrough demonstrates how to build a **structured data extraction model** from invoice receipts. You'll learn how to:
+
+- Upload multiple invoice PDFs to generate synthetic training data
+- Use **question/answer templates** to enforce strict JSON output format
+- Extract key fields like date, amount, currency, business name, and location
+- Create train/validation splits and get model recommendations
+- Launch fine-tuning jobs to create a production-ready extraction model
+
+**Why This Matters**: Many businesses need to automatically extract structured information from semi-structured documents (invoices, receipts, forms). This workflow shows you how to fine-tune a model that reliably outputs JSON with specific fields, without manual labeling.
+
+**What You'll Build**: A model that takes invoice text as input and returns structured JSON with transaction details.
+
 <Note>
-  Export your Prem API key as `API_KEY` before running any script. Set `API_BASE_URL` (defaults to `https://localhost`).
-  Place your PDF file as `By-Laws.pdf` in the same directory or update the `PDF_FILE` variable.
+  Export your Prem API key as `API_KEY` before running any script.
+  Place your invoice PDF files in the same directory or update the `PDF_FILES` array.
 </Note>
 
 
 <Steps>
   <Step>
+  # Setup: Define your PDF files
+
+  <CodeGroup>
+  ```ts TypeScript
+  const API_KEY = process.env.API_KEY;
+
+  // Define your invoice PDF files to process
+  const PDF_FILES = ['invoice_1.pdf', 'invoice_2.pdf', 'invoice_3.pdf'];
+  ```
+  ```python Python
+  import os
+  import requests
+
+  API_KEY = os.getenv("API_KEY")
+
+  # Define your invoice PDF files to process
+  PDF_FILES = ["invoice_1.pdf", "invoice_2.pdf", "invoice_3.pdf"]
+  ```
+  </CodeGroup>
+
+  Define the PDF files you want to process. Make sure these files exist in your working directory.
+  </Step>
+
+  <Step>
   # Create project and generate synthetic dataset from PDF
 
   <CodeGroup>
   ```ts TypeScript
-  const { project_id } = await api('/api/v1/public/projects/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/projects/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'PepsiCo By-Laws Project', goal: 'Train on corporate governance' })
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ name: 'Invoice Extraction Project', goal: 'Extract structured data from receipts' })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { project_id } = await res.json();
 
   const formData = new FormData();
   formData.append('project_id', project_id);
-  formData.append('name', 'PepsiCo By-Laws Dataset');
-  const pdfFile = file(PDF_FILE);
-  formData.append('files[]', pdfFile, PDF_FILE);
-  formData.append('pairs_to_generate', '100');
-  formData.append('pair_type', 'qa');
-  formData.append('user_instructions', 'Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document.');
+  formData.append('name', 'Invoice Receipts Dataset');
 
-  const { dataset_id } = await api('/api/v1/public/datasets/create-synthetic', {
+  // Upload multiple PDF files
+  PDF_FILES.forEach((pdfPath: string) => {
+    const pdfFile = file(pdfPath);
+    formData.append('files[]', pdfFile, pdfPath);
+  });
+
+  formData.append('pairs_to_generate', '1');
+  formData.append('pair_type', 'qa');
+  formData.append('temperature', '0');
+
+  // Add rules and constraints
+  formData.append('rules[]', 'Always include the full extracted text in the question');
+  formData.append('rules[]', 'Clearly instruct extraction into the given JSON schema');
+  formData.append('rules[]', 'Only output the JSON object (no extra text)');
+  formData.append('rules[]', 'Fill fields only if explicitly present in the text');
+  formData.append('rules[]', 'If a field is missing, leave it empty but keep the key');
+  formData.append('rules[]', 'Strictly follow the schema');
+  formData.append('rules[]', 'Never infer, guess, or fabricate information');
+
+  // Define question format
+  const questionFormat = `{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}`;
+  formData.append('question_format', questionFormat);
+
+  // Define answer format
+  const answerFormat = `{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}`;
+  formData.append('answer_format', answerFormat);
+
+  const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-synthetic', {
     method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
     body: formData
   });
+  if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
+  const { dataset_id } = await res2.json();
   ```
   ```python Python
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/projects/create",
+      "https://studio.premai.io/api/v1/public/projects/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"name": "PepsiCo By-Laws Project", "goal": "Train on corporate governance"}
+      json={"name": "Invoice Extraction Project", "goal": "Extract structured data from receipts"}
   )
   response.raise_for_status()
   project_id = response.json()["project_id"]
 
-  with open(PDF_FILE, 'rb') as f:
-      files = {'files[]': (PDF_FILE, f, 'application/pdf')}
-      data = {
-          'project_id': project_id,
-          'name': 'PepsiCo By-Laws Dataset',
-          'pairs_to_generate': '100',
-          'pair_type': 'qa',
-          'user_instructions': 'Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document.'
-      }
-      response = requests.post(
-          f"{API_BASE_URL}/api/v1/public/datasets/create-synthetic",
-          headers={"Authorization": f"Bearer {API_KEY}"},
-          files=files,
-          data=data
-      )
+  # Prepare files to upload
+  files = [(file_path, open(file_path, 'rb'), 'application/pdf') for file_path in PDF_FILES]
+  files_dict = [('files[]', f) for f in files]
+
+  # Define question format
+  question_format = """{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}"""
+
+  # Define answer format
+  answer_format = """{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}"""
+
+  data = {
+      'project_id': project_id,
+      'name': 'Invoice Receipts Dataset',
+      'pairs_to_generate': '1',
+      'pair_type': 'qa',
+      'temperature': '0',
+      'rules[]': [
+          'Always include the full extracted text in the question',
+          'Clearly instruct extraction into the given JSON schema',
+          'Only output the JSON object (no extra text)',
+          'Fill fields only if explicitly present in the text',
+          'If a field is missing, leave it empty but keep the key',
+          'Strictly follow the schema',
+          'Never infer, guess, or fabricate information'
+      ],
+      'question_format': question_format,
+      'answer_format': answer_format
+  }
+
+  response = requests.post(
+      "https://studio.premai.io/api/v1/public/datasets/create-synthetic",
+      headers={"Authorization": f"Bearer {API_KEY}"},
+      files=files_dict,
+      data=data
+  )
+
+  # Close file handles
+  for _, f, _ in files:
+      f.close()
+
   response.raise_for_status()
   dataset_id = response.json()["dataset_id"]
   ```
   </CodeGroup>
 
-  Create a project, then upload PDF files to generate synthetic Q&A pairs. The generation can take 5-10 minutes depending on document size.
+  Create a project, then upload multiple PDF invoice files to generate synthetic Q&A pairs that extract structured JSON data. The generation can take 5-10 minutes depending on document size.
   </Step>
 
   <Step>
@@ -76,7 +205,11 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
   let checks = 0;
   do {
     await sleep(5000);
-    dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+    const res = await fetch(`https://studio.premai.io/api/v1/public/datasets/${dataset_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    dataset = await res.json();
     if (checks++ % 6 === 0) {
       console.log(`Status: ${dataset.status}, ${dataset.datapoints_count} datapoints`);
     }
@@ -87,7 +220,7 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
   while True:
       time.sleep(5)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/datasets/{dataset_id}",
+          f"https://studio.premai.io/api/v1/public/datasets/{dataset_id}",
           headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
@@ -108,27 +241,40 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
 
   <CodeGroup>
   ```ts TypeScript
-  const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ dataset_id, split_percentage: 80 })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { snapshot_id } = await res.json();
 
-  await api('/api/v1/public/recommendations/generate', {
+  const res2 = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ snapshot_id, reasoning: false })
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ snapshot_id })
   });
+  if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
 
   let recs;
   do {
     await sleep(5000);
-    recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+    const res3 = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res3.ok) throw new Error(`${res3.status}: ${await res3.text()}`);
+    recs = await res3.json();
   } while (recs.status === 'processing');
   ```
   ```python Python
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/snapshots/create",
+      "https://studio.premai.io/api/v1/public/snapshots/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
       json={"dataset_id": dataset_id, "split_percentage": 80}
   )
@@ -136,18 +282,17 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
   snapshot_id = response.json()["snapshot_id"]
 
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/recommendations/generate",
+      "https://studio.premai.io/api/v1/public/recommendations/generate",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"snapshot_id": snapshot_id, "reasoning": False}
+      json={"snapshot_id": snapshot_id}
   )
   response.raise_for_status()
 
   while True:
       time.sleep(5)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/recommendations/{snapshot_id}",
-          headers={"Authorization": f"Bearer {API_KEY}"},
-          params={"reasoning": "false"}
+          f"https://studio.premai.io/api/v1/public/recommendations/{snapshot_id}",
+          headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
       recs = response.json()
@@ -164,45 +309,38 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
 
   <CodeGroup>
   ```ts TypeScript
-  const experiments = recs.recommended_models
-    .filter((m: any) => m.recommended)
-    .map((m: any) => ({
-      base_model_id: m.baseModelId,
-      batch_size: m.lora_hyperparameters.batchSize,
-      learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
-      n_epochs: m.lora_hyperparameters.nEpochs,
-      lora: true
-    }));
+  const experiments = recs.recommended_experiments
+    .filter((e: any) => e.recommended)
+    .map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
-  const { job_id } = await api('/api/v1/public/finetuning/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ snapshot_id, name: 'PepsiCo By-Laws Model', reasoning: false, experiments })
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ snapshot_id, name: 'PepsiCo By-Laws Model', experiments })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { job_id } = await res.json();
   ```
   ```python Python
   experiments = [
-      {
-          "base_model_id": m["base_model_id"],
-          "batch_size": m["lora_hyperparameters"]["batch_size"],
-          "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
-          "n_epochs": m["lora_hyperparameters"]["n_epochs"],
-          "lora": True
-      }
-      for m in recs["recommended_models"] if m["recommended"]
+      {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+      for exp in recs["recommended_experiments"] if exp["recommended"]
   ]
 
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/finetuning/create",
+      "https://studio.premai.io/api/v1/public/finetuning/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"snapshot_id": snapshot_id, "name": "PepsiCo By-Laws Model", "reasoning": False, "experiments": experiments}
+      json={"snapshot_id": snapshot_id, "name": "PepsiCo By-Laws Model", "experiments": experiments}
   )
   response.raise_for_status()
   job_id = response.json()["job_id"]
   ```
   </CodeGroup>
 
-  Filter recommended models and create a fine-tuning job using LoRA hyperparameters.
+  Filter recommended experiments and use them directly to launch the fine-tuning job.
   </Step>
 
   <Step>
@@ -212,7 +350,11 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
   ```ts TypeScript
   for (let i = 0; i < 30; i++) {
     await sleep(10000);
-    const job = await api(`/api/v1/public/finetuning/${job_id}`);
+    const res = await fetch(`https://studio.premai.io/api/v1/public/finetuning/${job_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    const job = await res.json();
     console.log(`Status: ${job.status}`);
     job.experiments.forEach((e: any) => {
       console.log(`  - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
@@ -224,7 +366,7 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
   for i in range(30):
       time.sleep(10)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/finetuning/{job_id}",
+          f"https://studio.premai.io/api/v1/public/finetuning/{job_id}",
           headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
@@ -254,30 +396,13 @@ description: "Generate synthetic Q&A pairs from PDF documents, create snapshots,
 
 import { file } from 'bun';
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost';
 const API_KEY = process.env.API_KEY;
-const PDF_FILE = 'By-Laws.pdf';
-
-// Disable TLS verification for local development with self-signed certs
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+const PDF_FILES = ['invoice_1.pdf', 'invoice_2.pdf', 'invoice_3.pdf'];
 
 if (!API_KEY) {
 	console.error('Error: API_KEY environment variable is required');
 	console.error('Please create a .env file based on .env.example');
 	process.exit(1);
-}
-
-async function api(endpoint: string, options: any = {}): Promise<any> {
-	const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-		...options,
-		headers: { Authorization: `Bearer ${API_KEY}`, ...options.headers },
-	});
-	if (!res.ok) {
-		const err: any = await res.json().catch(() => ({}));
-		const errorMsg = typeof err.error === 'string' ? err.error : JSON.stringify(err);
-		throw new Error(`${res.status}: ${errorMsg}`);
-	}
-	return res.json();
 }
 
 function sleep(ms: number) {
@@ -289,32 +414,77 @@ async function main() {
 
 	// 1. Create project
 	console.log('1. Creating project...');
-	const { project_id } = await api('/api/v1/public/projects/create', {
+	const res1 = await fetch('https://studio.premai.io/api/v1/public/projects/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ name: 'PepsiCo By-Laws Project', goal: 'Train on corporate governance' }),
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ name: 'Invoice Extraction Project', goal: 'Extract structured data from receipts' }),
 	});
+	if (!res1.ok) throw new Error(`${res1.status}: ${await res1.text()}`);
+	const { project_id } = await res1.json();
 	console.log(`   ✓ Project: ${project_id}\n`);
 
 	// 2. Generate synthetic dataset from PDF
-	console.log('2. Generating synthetic dataset from PDF...');
-	console.log(`   File: ${PDF_FILE}`);
+	console.log('2. Generating synthetic dataset from PDFs...');
+	console.log(`   Files: ${PDF_FILES.join(', ')}`);
 	const formData = new FormData();
 	formData.append('project_id', project_id);
-	formData.append('name', 'PepsiCo By-Laws Dataset');
-	const pdfFile = file(PDF_FILE);
-	formData.append('files[]', pdfFile, PDF_FILE);
-	formData.append('pairs_to_generate', '100');
-	formData.append('pair_type', 'qa');
-	formData.append(
-		'user_instructions',
-		'Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document.'
-	);
+	formData.append('name', 'Invoice Receipts Dataset');
 
-	const { dataset_id } = await api('/api/v1/public/datasets/create-synthetic', {
+	// Upload multiple PDF files
+	PDF_FILES.forEach((pdfPath) => {
+		const pdfFile = file(pdfPath);
+		formData.append('files[]', pdfFile, pdfPath);
+	});
+
+	formData.append('pairs_to_generate', '1');
+	formData.append('pair_type', 'qa');
+	formData.append('temperature', '0');
+
+	// Add rules and constraints
+	formData.append('rules[]', 'Always include the full extracted text in the question');
+	formData.append('rules[]', 'Clearly instruct extraction into the given JSON schema');
+	formData.append('rules[]', 'Only output the JSON object (no extra text)');
+	formData.append('rules[]', 'Fill fields only if explicitly present in the text');
+	formData.append('rules[]', 'If a field is missing, leave it empty but keep the key');
+	formData.append('rules[]', 'Strictly follow the schema');
+	formData.append('rules[]', 'Never infer, guess, or fabricate information');
+
+	// Define question format
+	const questionFormat = `{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}`;
+	formData.append('question_format', questionFormat);
+
+	// Define answer format
+	const answerFormat = `{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}`;
+	formData.append('answer_format', answerFormat);
+
+	const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-synthetic', {
 		method: 'POST',
+		headers: { 'Authorization': `Bearer ${API_KEY}` },
 		body: formData,
 	});
+	if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
+	const { dataset_id } = await res2.json();
 	console.log(`   ✓ Dataset: ${dataset_id}`);
 
 	// Wait for dataset (can take several minutes)
@@ -323,7 +493,11 @@ async function main() {
 	let checks = 0;
 	do {
 		await sleep(5000);
-		dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/datasets/${dataset_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		dataset = await res.json();
 		if (checks++ % 6 === 0) {
 			console.log(`   Status: ${dataset.status}, ${dataset.datapoints_count} datapoints`);
 		}
@@ -332,64 +506,80 @@ async function main() {
 
 	// 3. Create snapshot
 	console.log('3. Creating snapshot...');
-	const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+	const res3 = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
 		body: JSON.stringify({ dataset_id, split_percentage: 80 }),
 	});
+	if (!res3.ok) throw new Error(`${res3.status}: ${await res3.text()}`);
+	const { snapshot_id } = await res3.json();
 	console.log(`   ✓ Snapshot: ${snapshot_id}\n`);
 
 	// 4. Generate recommendations
 	console.log('4. Generating recommendations...');
-	await api('/api/v1/public/recommendations/generate', {
+	const res4 = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ snapshot_id, reasoning: false }),
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ snapshot_id }),
 	});
+	if (!res4.ok) throw new Error(`${res4.status}: ${await res4.text()}`);
 
 	let recs;
 	do {
 		await sleep(5000);
-		recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		recs = await res.json();
 	} while (recs.status === 'processing');
 
-	console.log(`   ✓ Recommended models:`);
-	const recommendedCount = recs.recommended_models.filter((m: any) => m.recommended).length;
-	console.log(`   Total models: ${recs.recommended_models.length}, Recommended: ${recommendedCount}`);
-	recs.recommended_models.forEach((m: any) => {
-		if (m.recommended) console.log(`     - ${m.baseModelId}`);
+	console.log(`   ✓ Recommended experiments:`);
+	const recommendedCount = recs.recommended_experiments.filter((e: any) => e.recommended).length;
+	console.log(`   Total experiments: ${recs.recommended_experiments.length}, Recommended: ${recommendedCount}`);
+	recs.recommended_experiments.forEach((e: any) => {
+		if (e.recommended) console.log(`     - ${e.base_model_id} (LoRA: ${e.lora})`);
 	});
 	console.log();
 
 	// 5. Create finetuning job
 	console.log('5. Creating finetuning job...');
-	const experiments = recs.recommended_models
-		.filter((m: any) => m.recommended)
-		.map((m: any) => ({
-			base_model_id: m.baseModelId,
-			batch_size: m.lora_hyperparameters.batchSize,
-			learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
-			n_epochs: m.lora_hyperparameters.nEpochs,
-			lora: true,
-		}));
+	const experiments = recs.recommended_experiments
+		.filter((e: any) => e.recommended)
+		.map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
 	if (experiments.length === 0) {
-		console.error('\n✗ Error: No recommended models found. Cannot create finetuning job.');
+		console.error('\n✗ Error: No recommended experiments found. Cannot create finetuning job.');
 		process.exit(1);
 	}
 
-	const { job_id } = await api('/api/v1/public/finetuning/create', {
+	const res5 = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ snapshot_id, name: 'PepsiCo By-Laws Model', reasoning: false, experiments }),
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ snapshot_id, name: 'PepsiCo By-Laws Model', experiments }),
 	});
+	if (!res5.ok) throw new Error(`${res5.status}: ${await res5.text()}`);
+	const { job_id } = await res5.json();
 	console.log(`   ✓ Job: ${job_id}\n`);
 
 	// 6. Monitor (5 minutes max)
 	console.log('6. Monitoring job...');
 	for (let i = 0; i < 30; i++) {
 		await sleep(10000);
-		const job = await api(`/api/v1/public/finetuning/${job_id}`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/finetuning/${job_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		const job = await res.json();
 		console.log(`   Status: ${job.status}`);
 		job.experiments.forEach((e: any) => {
 			console.log(`     - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
@@ -417,9 +607,8 @@ import os
 import time
 import requests
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://localhost")
 API_KEY = os.getenv("API_KEY")
-PDF_FILE = "By-Laws.pdf"
+PDF_FILES = ["invoice_1.pdf", "invoice_2.pdf", "invoice_3.pdf"]
 
 if not API_KEY:
     print("Error: API_KEY environment variable is required")
@@ -429,7 +618,7 @@ if not API_KEY:
 def api(endpoint: str, method: str = "GET", **kwargs):
     response = requests.request(
         method=method,
-        url=f"{API_BASE_URL}{endpoint}",
+        url=f"https://studio.premai.io{endpoint}",
         headers={"Authorization": f"Bearer {API_KEY}", **kwargs.pop("headers", {})},
         **kwargs
     )
@@ -445,23 +634,67 @@ def main():
 
     # Create project
     print("1. Creating project...")
-    result = api("/api/v1/public/projects/create", method="POST", headers={"Content-Type": "application/json"}, json={"name": "PepsiCo By-Laws Project", "goal": "Train on corporate governance"})
+    result = api("/api/v1/public/projects/create", method="POST", headers={"Content-Type": "application/json"}, json={"name": "Invoice Extraction Project", "goal": "Extract structured data from receipts"})
     project_id = result["project_id"]
     print(f"   ✓ Project: {project_id}\n")
 
     # Generate synthetic dataset from PDF
-    print("2. Generating synthetic dataset from PDF...")
-    print(f"   File: {PDF_FILE}")
-    with open(PDF_FILE, "rb") as f:
-        files = {"files[]": (PDF_FILE, f, "application/pdf")}
-        data = {
-            "project_id": project_id,
-            "name": "PepsiCo By-Laws Dataset",
-            "pairs_to_generate": "100",
-            "pair_type": "qa",
-            "user_instructions": "Generate question-answer pairs about PepsiCo internal rules, governance policies, corporate by-laws, board procedures, voting requirements, and organizational structure. Focus on specific rules, requirements, and procedures mentioned in the document."
-        }
-        result = api("/api/v1/public/datasets/create-synthetic", method="POST", files=files, data=data)
+    print("2. Generating synthetic dataset from PDFs...")
+    print(f"   Files: {', '.join(PDF_FILES)}")
+
+    # Prepare files to upload
+    files = [(file_path, open(file_path, 'rb'), 'application/pdf') for file_path in PDF_FILES]
+    files_dict = [('files[]', f) for f in files]
+
+    # Define question format
+    question_format = """{EXTRACTED_TEXT}
+
+Task: Extract all the information available in the text and present it in the JSON format below.
+Do not infer or invent details — only include what is explicitly stated.
+
+JSON Schema:
+{
+  "DateTime": "YYYY-MM-DD HH:MM:SS",
+  "Total Amount": "number",
+  "Currency": "string",
+  "Business Name": "string",
+  "Business Location": "string"
+}"""
+
+    # Define answer format
+    answer_format = """{
+  "DateTime": "<transaction_datetime_if_present>",
+  "Total Amount": "<total_amount_if_present>",
+  "Currency": "<currency_code_if_present>",
+  "Business Name": "<business_name_if_present>",
+  "Business Location": "<city_state_country_if_present>"
+}"""
+
+    data = {
+        "project_id": project_id,
+        "name": "Invoice Receipts Dataset",
+        "pairs_to_generate": "1",
+        "pair_type": "qa",
+        "temperature": "0",
+        "rules[]": [
+            "Always include the full extracted text in the question",
+            "Clearly instruct extraction into the given JSON schema",
+            "Only output the JSON object (no extra text)",
+            "Fill fields only if explicitly present in the text",
+            "If a field is missing, leave it empty but keep the key",
+            "Strictly follow the schema",
+            "Never infer, guess, or fabricate information"
+        ],
+        "question_format": question_format,
+        "answer_format": answer_format
+    }
+
+    result = api("/api/v1/public/datasets/create-synthetic", method="POST", files=files_dict, data=data)
+
+    # Close file handles
+    for _, f, _ in files:
+        f.close()
+
     dataset_id = result["dataset_id"]
     print(f"   ✓ Dataset: {dataset_id}")
 
@@ -486,40 +719,34 @@ def main():
 
     # Generate recommendations
     print("4. Generating recommendations...")
-    api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "reasoning": False})
+    api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id})
 
     while True:
         time.sleep(5)
-        recs = api(f"/api/v1/public/recommendations/{snapshot_id}", params={"reasoning": "false"})
+        recs = api(f"/api/v1/public/recommendations/{snapshot_id}")
         if recs["status"] != "processing":
             break
 
-    print("   ✓ Recommended models:")
-    recommended_count = sum(1 for m in recs["recommended_models"] if m["recommended"])
-    print(f"   Total models: {len(recs['recommended_models'])}, Recommended: {recommended_count}")
-    for m in recs["recommended_models"]:
-        if m["recommended"]:
-            print(f"     - {m['base_model_id']}")
+    print("   ✓ Recommended experiments:")
+    recommended_count = sum(1 for e in recs["recommended_experiments"] if e["recommended"])
+    print(f"   Total experiments: {len(recs['recommended_experiments'])}, Recommended: {recommended_count}")
+    for e in recs["recommended_experiments"]:
+        if e["recommended"]:
+            print(f"     - {e['base_model_id']} (LoRA: {e['lora']})")
     print()
 
     # Create finetuning job
     print("5. Creating finetuning job...")
     experiments = [
-        {
-            "base_model_id": m["base_model_id"],
-            "batch_size": m["lora_hyperparameters"]["batch_size"],
-            "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
-            "n_epochs": m["lora_hyperparameters"]["n_epochs"],
-            "lora": True
-        }
-        for m in recs["recommended_models"] if m["recommended"]
+        {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+        for exp in recs["recommended_experiments"] if exp["recommended"]
     ]
 
     if not experiments:
-        print("\n✗ Error: No recommended models found. Cannot create finetuning job.")
+        print("\n✗ Error: No recommended experiments found. Cannot create finetuning job.")
         exit(1)
 
-    result = api("/api/v1/public/finetuning/create", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "name": "PepsiCo By-Laws Model", "reasoning": False, "experiments": experiments})
+    result = api("/api/v1/public/finetuning/create", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "name": "PepsiCo By-Laws Model", "experiments": experiments})
     job_id = result["job_id"]
     print(f"   ✓ Job: {job_id}\n")
 

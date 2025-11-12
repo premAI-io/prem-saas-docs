@@ -1,0 +1,1018 @@
+---
+title: "Continuous Fine-Tuning with Traces"
+description: "Use traces to continuously improve your models by evaluating responses, gathering feedback, and iteratively fine-tuning."
+---
+
+## Overview
+
+This walkthrough demonstrates how to implement **continuous fine-tuning** using traces. You'll learn how to:
+
+- Use your fine-tuned model for inference
+- Automatically evaluate model responses using a judge model (Claude 4.5 Sonnet)
+- Create traces with scores and feedback
+- Add **ALL** traces to your dataset (both successes and failures)
+- Let the API automatically improve low-quality outputs using judge feedback
+- Create new snapshots and launch iterative fine-tuning jobs that fix model weaknesses
+
+**Why This Matters**: Models improve over time when you continuously gather production data, evaluate it, and learn from **both successes and failures**. Low-scoring responses identify where your model is weak - these are automatically corrected and used for training, so your model gets better at exactly what it struggles with. This creates a virtuous cycle of targeted improvement.
+
+**What You'll Build**: A continuous fine-tuning loop that:
+1. Generates responses from your fine-tuned model **using domain-specific test prompts**
+2. Uses an AI judge to evaluate response quality (0-1 scale: feedback → reasoning → score)
+3. Creates traces with structured feedback
+4. Adds **ALL** traces to your dataset (both high and low-scoring) - low-scoring traces are automatically improved by the API
+5. Triggers a new fine-tuning job that learns from both successes AND corrected failures
+
+<Warning>
+  **CRITICAL**: This workflow requires you to provide test prompts that match your fine-tuned model's domain. Generic prompts will produce useless results. For example:
+  - **Invoice model?** Test with actual invoice text
+  - **Stock analysis model?** Test with financial questions/transcripts
+  - **Custom domain?** Test with prompts from YOUR specific use case
+</Warning>
+
+<Note>
+  **Prerequisites**: This walkthrough assumes you have already completed one of the previous workflows ([JSONL](/api-reference/walkthroughs/jsonl-workflow), [PDF](/api-reference/walkthroughs/pdf-synthetic-workflow), or [YouTube](/api-reference/walkthroughs/youtube-synthetic-workflow)) and have:
+  - A project with at least one fine-tuned model
+  - An existing dataset
+  - A fine-tuned model ID/alias ready for inference
+
+  Export your Prem API key as `API_KEY` before running any script.
+</Note>
+
+
+<Steps>
+  <Step>
+  # Define initial parameters and fetch dataset from project
+
+  <CodeGroup>
+  ```ts TypeScript
+  const PROJECT_ID = 'your-project-id-here';
+  const FINETUNED_MODEL_ALIAS = 'your-model-alias';
+  const JUDGE_MODEL = 'claude-4.5-sonnet';
+
+  // Fetch dataset from project
+  const projectRes = await fetch(`https://studio.premai.io/api/v1/public/projects/${PROJECT_ID}`, {
+    headers: { 'Authorization': `Bearer ${API_KEY}` }
+  });
+  if (!projectRes.ok) throw new Error(`Failed to fetch project: ${projectRes.status}`);
+  const project = await projectRes.json();
+  const dataset = project.project.children.find((child: any) => child.type === 'dataset');
+  if (!dataset) throw new Error('No dataset found in project');
+  const DATASET_ID = dataset.id;
+
+  // CRITICAL: Replace with prompts matching your model's domain!
+  const TEST_PROMPTS = [
+    'YOUR_FIRST_TEST_PROMPT_HERE - MUST match your model domain!',
+    'YOUR_SECOND_TEST_PROMPT_HERE - MUST match your model domain!',
+    'YOUR_THIRD_TEST_PROMPT_HERE - MUST match your model domain!'
+  ];
+  ```
+  ```python Python
+  PROJECT_ID = "your-project-id-here"
+  FINETUNED_MODEL_ALIAS = "your-model-alias"
+  JUDGE_MODEL = "claude-4.5-sonnet"
+
+  # Fetch dataset from project
+  project = api(f"/api/v1/public/projects/{PROJECT_ID}")
+  dataset = next((child for child in project["project"]["children"] if child["type"] == "dataset"), None)
+  if not dataset:
+      raise Exception("No dataset found in project")
+  DATASET_ID = dataset["id"]
+
+  # CRITICAL: Replace with prompts matching your model's domain!
+  TEST_PROMPTS = [
+      "YOUR_FIRST_TEST_PROMPT_HERE - MUST match your model domain!",
+      "YOUR_SECOND_TEST_PROMPT_HERE - MUST match your model domain!",
+      "YOUR_THIRD_TEST_PROMPT_HERE - MUST match your model domain!"
+  ]
+  ```
+  </CodeGroup>
+  </Step>
+
+  <Step>
+  # Generate responses from your fine-tuned model
+
+  <CodeGroup>
+  ```ts TypeScript
+  const modelResponses = [];
+
+  for (const prompt of TEST_PROMPTS) {
+    const res = await fetch('https://studio.premai.io/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        project_id: PROJECT_ID,
+        model: FINETUNED_MODEL_ALIAS,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    const response = await res.json();
+    modelResponses.push({
+      prompt,
+      answer: response.choices[0].message.content
+    });
+  }
+  ```
+  ```python Python
+  import requests
+  import json
+  import time
+  import os
+
+  API_KEY = os.getenv("API_KEY")
+
+  if not API_KEY:
+      print("Error: API_KEY environment variable is required")
+      exit(1)
+
+
+  def api(endpoint: str, method: str = "GET", **kwargs):
+      response = requests.request(
+          method=method,
+          url=f"https://studio.premai.io{endpoint}",
+          headers={"Authorization": f"Bearer {API_KEY}", **kwargs.pop("headers", {})},
+          **kwargs
+      )
+      if not response.ok:
+          err = response.json() if response.content else {}
+          error_msg = err.get("error", str(err)) if isinstance(err, dict) else str(err)
+          raise Exception(f"{response.status_code}: {error_msg}")
+      return response.json()
+
+
+  model_responses = []
+
+  for prompt in TEST_PROMPTS:
+      response = api(
+          "/api/v1/chat/completions",
+          method="POST",
+          headers={"Content-Type": "application/json"},
+          json={
+              "project_id": PROJECT_ID,
+              "model": FINETUNED_MODEL_ALIAS,
+              "messages": [{"role": "user", "content": prompt}]
+          }
+      )
+      model_responses.append({
+          "prompt": prompt,
+          "answer": response["choices"][0]["message"]["content"]
+      })
+  ```
+  </CodeGroup>
+  </Step>
+
+  <Step>
+  # Evaluate responses with judge model
+
+  <CodeGroup>
+  ```ts TypeScript
+  const evaluations = [];
+
+  for (const item of modelResponses) {
+    const judgePrompt = `You are an expert AI evaluator. Evaluate the following response.
+
+User Question: ${item.prompt}
+
+Model Response: ${item.answer}
+
+Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
+{
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
+}`;
+
+    const res = await fetch('https://studio.premai.io/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        project_id: PROJECT_ID,
+        model: JUDGE_MODEL,
+        messages: [{ role: 'user', content: judgePrompt }],
+        temperature: 0.1
+      })
+    });
+
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    const response = await res.json();
+    const judgeResponse = response.choices[0].message.content;
+
+    let evaluation;
+    try {
+      const jsonMatch = judgeResponse.match(/\{[\s\S]*\}/);
+      evaluation = JSON.parse(jsonMatch ? jsonMatch[0] : judgeResponse);
+    } catch (e) {
+      evaluation = {
+        score: 0.5,
+        feedback: judgeResponse,
+        reasoning: 'Could not parse structured evaluation'
+      };
+    }
+
+    evaluations.push({
+      prompt: item.prompt,
+      answer: item.answer,
+      score: evaluation.score,
+      feedback: evaluation.feedback,
+      reasoning: evaluation.reasoning
+    });
+  }
+  ```
+  ```python Python
+  evaluations = []
+
+  for item in model_responses:
+      judge_prompt = f"""You are an expert AI evaluator. Evaluate the following response.
+
+User Question: {item['prompt']}
+
+Model Response: {item['answer']}
+
+Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
+{{
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
+}}"""
+
+      response = api(
+          "/api/v1/chat/completions",
+          method="POST",
+          headers={"Content-Type": "application/json"},
+          json={
+              "project_id": PROJECT_ID,
+              "model": JUDGE_MODEL,
+              "messages": [{"role": "user", "content": judge_prompt}],
+              "temperature": 0.1
+          }
+      )
+
+      judge_response = response["choices"][0]["message"]["content"]
+
+      try:
+          import re
+          json_match = re.search(r'\{[\s\S]*\}', judge_response)
+          evaluation = json.loads(json_match.group(0) if json_match else judge_response)
+      except Exception:
+          evaluation = {
+              "score": 0.5,
+              "feedback": judge_response,
+              "reasoning": "Could not parse structured evaluation"
+          }
+
+      evaluations.append({
+          "prompt": item["prompt"],
+          "answer": item["answer"],
+          "score": evaluation["score"],
+          "feedback": evaluation["feedback"],
+          "reasoning": evaluation["reasoning"]
+      })
+  ```
+  </CodeGroup>
+  </Step>
+
+  <Step>
+  # Create traces
+
+  <CodeGroup>
+  ```ts TypeScript
+  const traceIds = [];
+
+  for (const evaluation of evaluations) {
+    const res = await fetch('https://studio.premai.io/api/v1/traces', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        project_id: PROJECT_ID,
+        model_id: FINETUNED_MODEL_ALIAS,
+        input: evaluation.prompt,
+        output: evaluation.answer,
+        score: evaluation.score,
+        feedback: `${evaluation.feedback}\n\nReasoning: ${evaluation.reasoning}`
+      })
+    });
+
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    const trace = await res.json();
+    traceIds.push(trace.id);
+  }
+  ```
+  ```python Python
+  trace_ids = []
+
+  for evaluation in evaluations:
+      trace = api(
+          "/api/v1/traces",
+          method="POST",
+          headers={"Content-Type": "application/json"},
+          json={
+              "project_id": PROJECT_ID,
+              "model_id": FINETUNED_MODEL_ALIAS,
+              "input": evaluation["prompt"],
+              "output": evaluation["answer"],
+              "score": evaluation["score"],
+              "feedback": f"{evaluation['feedback']}\n\nReasoning: {evaluation['reasoning']}"
+          }
+      )
+      trace_ids.append(trace["id"])
+  ```
+  </CodeGroup>
+  </Step>
+
+  <Step>
+  # Add all traces to dataset
+
+  <CodeGroup>
+  ```ts TypeScript
+  for (const traceId of traceIds) {
+    const res = await fetch(`https://studio.premai.io/api/v1/traces/${traceId}/addToDataset`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`Failed to add trace: ${res.status}`);
+  }
+  ```
+  ```python Python
+  for trace_id in trace_ids:
+      response = requests.post(
+          f"https://studio.premai.io/api/v1/traces/{trace_id}/addToDataset",
+          headers={"Authorization": f"Bearer {API_KEY}"}
+      )
+      response.raise_for_status()
+  ```
+  </CodeGroup>
+
+  Add all traces to dataset. Low-scoring traces are automatically improved by the API using judge feedback.
+  </Step>
+
+  <Step>
+  # Create snapshot
+
+  <CodeGroup>
+  ```ts TypeScript
+  const res = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      dataset_id: DATASET_ID,
+      split_percentage: 80
+    })
+  });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { snapshot_id } = await res.json();
+  ```
+  ```python Python
+  result = api(
+      "/api/v1/public/snapshots/create",
+      method="POST",
+      headers={"Content-Type": "application/json"},
+      json={"dataset_id": DATASET_ID, "split_percentage": 80}
+  )
+  snapshot_id = result["snapshot_id"]
+  ```
+  </CodeGroup>
+  </Step>
+
+  <Step>
+  # Generate recommendations
+
+  <CodeGroup>
+  ```ts TypeScript
+  const res = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ snapshot_id })
+  });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+
+  let recs;
+  do {
+    await sleep(5000);
+    const res2 = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
+    recs = await res2.json();
+  } while (recs.status === 'processing');
+  ```
+  ```python Python
+  api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id})
+
+  while True:
+      time.sleep(5)
+      recs = api(f"/api/v1/public/recommendations/{snapshot_id}")
+      if recs["status"] != "processing":
+          break
+  ```
+  </CodeGroup>
+  </Step>
+
+  <Step>
+  # Launch fine-tuning job
+
+  <CodeGroup>
+  ```ts TypeScript
+  const experiments = recs.recommended_experiments
+    .filter((e: any) => e.recommended)
+    .map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
+
+  if (experiments.length === 0) throw new Error('No recommended experiments found');
+
+  const res = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      snapshot_id,
+      name: `Continuous Fine-tuning - ${new Date().toISOString().split('T')[0]}`,
+      experiments
+    })
+  });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { job_id } = await res.json();
+  ```
+  ```python Python
+  experiments = [
+      {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+      for exp in recs["recommended_experiments"] if exp["recommended"]
+  ]
+
+  if not experiments:
+      raise Exception("No recommended experiments found")
+
+  from datetime import datetime
+  result = api(
+      "/api/v1/public/finetuning/create",
+      method="POST",
+      headers={"Content-Type": "application/json"},
+      json={
+          "snapshot_id": snapshot_id,
+          "name": f"Continuous Fine-tuning - {datetime.now().strftime('%Y-%m-%d')}",
+          "experiments": experiments
+      }
+  )
+  job_id = result["job_id"]
+  ```
+  </CodeGroup>
+  </Step>
+</Steps>
+
+## Full Example
+
+<CodeGroup>
+```ts TypeScript
+#!/usr/bin/env bun
+
+const API_KEY = process.env.API_KEY;
+const PROJECT_ID = 'your-project-id-here';
+const FINETUNED_MODEL_ALIAS = 'your-model-alias';
+const JUDGE_MODEL = 'claude-4.5-sonnet';
+
+// CRITICAL: Replace with prompts matching your model's domain!
+const TEST_PROMPTS = [
+	'YOUR_FIRST_TEST_PROMPT_HERE',
+	'YOUR_SECOND_TEST_PROMPT_HERE',
+	'YOUR_THIRD_TEST_PROMPT_HERE'
+];
+
+if (!API_KEY) {
+	console.error('Error: API_KEY environment variable is required');
+	process.exit(1);
+}
+
+function sleep(ms: number) {
+	return new Promise((r) => setTimeout(r, ms));
+}
+
+async function main() {
+	const projectRes = await fetch(`https://studio.premai.io/api/v1/public/projects/${PROJECT_ID}`, {
+		headers: { 'Authorization': `Bearer ${API_KEY}` }
+	});
+	if (!projectRes.ok) throw new Error(`Failed to fetch project: ${projectRes.status}`);
+	const project = await projectRes.json();
+	const dataset = project.project.children.find((child: any) => child.type === 'dataset');
+	if (!dataset) throw new Error('No dataset found in project');
+	const DATASET_ID = dataset.id;
+
+	const modelResponses = [];
+	for (const prompt of TEST_PROMPTS) {
+		const res = await fetch('https://studio.premai.io/api/v1/chat/completions', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${API_KEY}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				project_id: PROJECT_ID,
+				model: FINETUNED_MODEL_ALIAS,
+				messages: [{ role: 'user', content: prompt }]
+			})
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		const response = await res.json();
+		modelResponses.push({ prompt, answer: response.choices[0].message.content });
+	}
+
+	const evaluations = [];
+
+	for (const item of modelResponses) {
+		const judgePrompt = `You are an expert AI evaluator. Evaluate the following response.
+
+User Question: ${item.prompt}
+
+Model Response: ${item.answer}
+
+Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
+{
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
+}`;
+
+		const res = await fetch('https://studio.premai.io/api/v1/chat/completions', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${API_KEY}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				project_id: PROJECT_ID,
+				model: JUDGE_MODEL,
+				messages: [{ role: 'user', content: judgePrompt }],
+				temperature: 0.1
+			})
+		});
+
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		const response = await res.json();
+		const judgeResponse = response.choices[0].message.content;
+
+		let evaluation;
+		try {
+			const jsonMatch = judgeResponse.match(/\{[\s\S]*\}/);
+			evaluation = JSON.parse(jsonMatch ? jsonMatch[0] : judgeResponse);
+		} catch (e) {
+			console.warn(`Warning: Could not parse judge response`);
+			evaluation = {
+				score: 5,
+				feedback: judgeResponse,
+				reasoning: 'Could not parse structured evaluation'
+			};
+		}
+
+		evaluations.push({
+			prompt: item.prompt,
+			answer: item.answer,
+			score: evaluation.score,
+			feedback: evaluation.feedback,
+			reasoning: evaluation.reasoning
+		});
+
+		console.log(`✓ Evaluated: "${item.prompt.substring(0, 40)}..." - Score: ${evaluation.score}`);
+	}
+
+	console.log(`\n✓ Evaluated ${evaluations.length} responses\n`);
+
+	// Step 3: Create traces
+	console.log('=== Step 3: Creating traces with evaluation data ===\n');
+
+	const traceIds = [];
+
+	for (const evaluation of evaluations) {
+		const res = await fetch('https://studio.premai.io/api/v1/traces', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${API_KEY}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				project_id: PROJECT_ID,
+				model_id: FINETUNED_MODEL_ALIAS,
+				input: evaluation.prompt,
+				output: evaluation.answer,
+				score: evaluation.score,
+				feedback: `${evaluation.feedback}\n\nReasoning: ${evaluation.reasoning}`
+			})
+		});
+
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		const trace = await res.json();
+
+		traceIds.push(trace.id);
+		console.log(`✓ Created trace ${trace.id} - Score: ${evaluation.score}`);
+	}
+
+	console.log(`\n✓ Created ${traceIds.length} traces\n`);
+
+	// Step 4: Add ALL traces to dataset (including low-scoring ones!)
+	console.log('=== Step 4: Adding ALL traces to dataset ===\n');
+	console.log('IMPORTANT: Adding ALL traces, including low-scoring ones!');
+	console.log('Low-scoring traces help identify model weaknesses.');
+	console.log('The addToDataset endpoint automatically uses the dataset from the project.\n');
+
+	const addedTraces = [];
+
+	for (let i = 0; i < traceIds.length; i++) {
+		const traceId = traceIds[i];
+		const score = evaluations[i].score;
+
+		const res = await fetch(`https://studio.premai.io/api/v1/traces/${traceId}/addToDataset`, {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${API_KEY}`
+			}
+		});
+
+		if (!res.ok) {
+			console.warn(`Warning: Failed to add trace ${traceId}`);
+			continue;
+		}
+
+		addedTraces.push(traceId);
+		const quality = score >= 0.7 ? 'high-quality' : 'low-quality (will be improved)';
+		console.log(`✓ Added trace ${traceId} (${quality}, score: ${score}) to dataset`);
+	}
+
+	console.log(`\n✓ Added ${addedTraces.length} traces to dataset\n`);
+
+	// Step 5: Create new snapshot
+	console.log('=== Step 5: Creating new snapshot ===\n');
+
+	const res5 = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
+		method: 'POST',
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			dataset_id: DATASET_ID,
+			split_percentage: 80
+		})
+	});
+
+	if (!res5.ok) throw new Error(`${res5.status}: ${await res5.text()}`);
+	const { snapshot_id } = await res5.json();
+
+	console.log(`✓ Created new snapshot: ${snapshot_id}\n`);
+
+	// Step 6: Generate recommendations
+	console.log('=== Step 6: Generating recommendations ===\n');
+
+	const res6 = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
+		method: 'POST',
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ snapshot_id })
+	});
+
+	if (!res6.ok) throw new Error(`${res6.status}: ${await res6.text()}`);
+
+	let recs;
+	do {
+		await sleep(5000);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		recs = await res.json();
+	} while (recs.status === 'processing');
+
+	console.log('✓ Recommendations ready\n');
+
+	// Step 7: Launch new fine-tuning job
+	console.log('=== Step 7: Launching new fine-tuning job ===\n');
+
+	const experiments = recs.recommended_experiments
+		.filter((e: any) => e.recommended)
+		.map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
+
+	if (experiments.length === 0) {
+		console.error('✗ No recommended experiments found');
+		process.exit(1);
+	}
+
+	const res7 = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
+		method: 'POST',
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			snapshot_id,
+			name: `Continuous Fine-tuning - ${new Date().toISOString().split('T')[0]}`,
+			experiments
+		})
+	});
+
+	if (!res7.ok) throw new Error(`${res7.status}: ${await res7.text()}`);
+	const { job_id } = await res7.json();
+
+	console.log(`✓ Fine-tuning job started: ${job_id}\n`);
+	console.log('✓ Continuous fine-tuning cycle complete!\n');
+}
+
+main().catch((err) => {
+	console.error('\n✗ Error:', err.message);
+	process.exit(1);
+});
+```
+```python Python
+#!/usr/bin/env python3
+
+"""
+Continuous Fine-Tuning with Traces Workflow
+
+Prerequisites: You must have completed a previous workflow and have:
+- PROJECT_ID: Your existing project ID
+- FINETUNED_MODEL_ALIAS: Your fine-tuned model alias
+(DATASET_ID is automatically fetched from the project)
+"""
+
+import os
+import time
+import requests
+import json
+import re
+from datetime import datetime
+
+API_KEY = os.getenv("API_KEY")
+
+# ============================================
+# IMPORTANT: Replace these with YOUR actual IDs
+# ============================================
+PROJECT_ID = "your-project-id-here"
+FINETUNED_MODEL_ALIAS = "your-model-alias"
+JUDGE_MODEL = "claude-4.5-sonnet"
+
+# ============================================
+# CRITICAL: Replace with prompts matching YOUR model domain!
+# ============================================
+# Invoice model example: test with actual invoice text
+# Stock model example: test with financial analysis questions
+# Your domain: YOUR specific use case prompts
+TEST_PROMPTS = [
+    "YOUR_FIRST_TEST_PROMPT_HERE - MUST match your model domain!",
+    "YOUR_SECOND_TEST_PROMPT_HERE - MUST match your model domain!",
+    "YOUR_THIRD_TEST_PROMPT_HERE - MUST match your model domain!"
+]
+
+if not API_KEY:
+    print("Error: API_KEY environment variable is required")
+    exit(1)
+
+
+def api(endpoint: str, method: str = "GET", **kwargs):
+    response = requests.request(
+        method=method,
+        url=f"https://studio.premai.io{endpoint}",
+        headers={"Authorization": f"Bearer {API_KEY}", **kwargs.pop("headers", {})},
+        **kwargs
+    )
+    if not response.ok:
+        err = response.json() if response.content else {}
+        error_msg = err.get("error", str(err)) if isinstance(err, dict) else str(err)
+        raise Exception(f"{response.status_code}: {error_msg}")
+    return response.json()
+
+
+def main():
+    project = api(f"/api/v1/public/projects/{PROJECT_ID}")
+    dataset = next((child for child in project["project"]["children"] if child["type"] == "dataset"), None)
+    if not dataset:
+        raise Exception("No dataset found in project")
+    DATASET_ID = dataset["id"]
+
+    # Step 1: Generate responses from fine-tuned model
+    print("=== Step 1: Generating responses from fine-tuned model ===\n")
+
+    model_responses = []
+
+    for prompt in TEST_PROMPTS:
+        response = api(
+            "/api/v1/chat/completions",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            json={
+                "project_id": PROJECT_ID,
+                "model": FINETUNED_MODEL_ALIAS,
+                "messages": [{"role": "user", "content": prompt}]
+            }
+        )
+
+        model_answer = response["choices"][0]["message"]["content"]
+        model_responses.append({"prompt": prompt, "answer": model_answer})
+        print(f"✓ Generated response for: \"{prompt[:50]}...\"")
+
+    print(f"\n✓ Generated {len(model_responses)} responses\n")
+
+    # Step 2: Evaluate responses with judge model
+    print("=== Step 2: Evaluating responses with Claude 4.5 Sonnet ===\n")
+
+    evaluations = []
+
+    for item in model_responses:
+        judge_prompt = f"""You are an expert AI evaluator. Evaluate the following response.
+
+User Question: {item['prompt']}
+
+Model Response: {item['answer']}
+
+Provide your evaluation in the following JSON format (output ONLY the JSON, no other text):
+{{
+  "feedback": "<detailed explanation highlighting strengths and weaknesses>",
+  "reasoning": "<why you gave this specific score>",
+  "score": <number between 0 and 1, where 0 is completely wrong and 1 is perfect>
+}}"""
+
+        response = api(
+            "/api/v1/chat/completions",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            json={
+                "project_id": PROJECT_ID,
+                "model": JUDGE_MODEL,
+                "messages": [{"role": "user", "content": judge_prompt}],
+                "temperature": 0.1
+            }
+        )
+
+        judge_response = response["choices"][0]["message"]["content"]
+
+        try:
+            json_match = re.search(r'\{[\s\S]*\}', judge_response)
+            evaluation = json.loads(json_match.group(0) if json_match else judge_response)
+        except Exception as e:
+            print(f"Warning: Could not parse judge response")
+            evaluation = {
+                "score": 5,
+                "feedback": judge_response,
+                "reasoning": "Could not parse structured evaluation"
+            }
+
+        evaluations.append({
+            "prompt": item["prompt"],
+            "answer": item["answer"],
+            "score": evaluation["score"],
+            "feedback": evaluation["feedback"],
+            "reasoning": evaluation["reasoning"]
+        })
+
+        print(f"✓ Evaluated: \"{item['prompt'][:40]}...\" - Score: {evaluation['score']}")
+
+    print(f"\n✓ Evaluated {len(evaluations)} responses\n")
+
+    # Step 3: Create traces
+    print("=== Step 3: Creating traces with evaluation data ===\n")
+
+    trace_ids = []
+
+    for evaluation in evaluations:
+        trace = api(
+            "/api/v1/traces",
+            method="POST",
+            headers={"Content-Type": "application/json"},
+            json={
+                "project_id": PROJECT_ID,
+                "model_id": FINETUNED_MODEL_ALIAS,
+                "input": evaluation["prompt"],
+                "output": evaluation["answer"],
+                "score": evaluation["score"],
+                "feedback": f"{evaluation['feedback']}\n\nReasoning: {evaluation['reasoning']}"
+            }
+        )
+
+        trace_ids.append(trace["id"])
+        print(f"✓ Created trace {trace['id']} - Score: {evaluation['score']}")
+
+    print(f"\n✓ Created {len(trace_ids)} traces\n")
+
+    # Step 4: Add ALL traces to dataset (including low-scoring ones!)
+    print("=== Step 4: Adding ALL traces to dataset ===\n")
+    print("IMPORTANT: Adding ALL traces, including low-scoring ones!")
+    print("Low-scoring traces help identify model weaknesses.")
+    print("The addToDataset endpoint automatically uses the dataset from the project.\n")
+
+    added_traces = []
+
+    for i, trace_id in enumerate(trace_ids):
+        score = evaluations[i]["score"]
+
+        try:
+            # Note: addToDataset does NOT take parameters - it automatically uses the dataset from the project
+            response = requests.post(
+                f"https://studio.premai.io/api/v1/traces/{trace_id}/addToDataset",
+                headers={"Authorization": f"Bearer {API_KEY}"}
+            )
+            response.raise_for_status()
+
+            added_traces.append(trace_id)
+            quality = "high-quality" if score >= 0.7 else "low-quality (will be improved)"
+            print(f"✓ Added trace {trace_id} ({quality}, score: {score}) to dataset")
+        except Exception as e:
+            print(f"Warning: Failed to add trace {trace_id}")
+            continue
+
+    print(f"\n✓ Added {len(added_traces)} traces to dataset\n")
+
+    # Step 5: Create new snapshot
+    print("=== Step 5: Creating new snapshot ===\n")
+
+    result = api(
+        "/api/v1/public/snapshots/create",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        json={
+            "dataset_id": DATASET_ID,
+            "split_percentage": 80
+        }
+    )
+
+    snapshot_id = result["snapshot_id"]
+    print(f"✓ Created new snapshot: {snapshot_id}\n")
+
+    # Step 6: Generate recommendations
+    print("=== Step 6: Generating recommendations ===\n")
+
+    api(
+        "/api/v1/public/recommendations/generate",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        json={"snapshot_id": snapshot_id}
+    )
+
+    while True:
+        time.sleep(5)
+        recs = api(f"/api/v1/public/recommendations/{snapshot_id}")
+        if recs["status"] != "processing":
+            break
+
+    print("✓ Recommendations ready\n")
+
+    # Step 7: Launch new fine-tuning job
+    print("=== Step 7: Launching new fine-tuning job ===\n")
+
+    experiments = [
+        {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+        for exp in recs["recommended_experiments"] if exp["recommended"]
+    ]
+
+    if not experiments:
+        print("✗ No recommended experiments found")
+        exit(1)
+
+    result = api(
+        "/api/v1/public/finetuning/create",
+        method="POST",
+        headers={"Content-Type": "application/json"},
+        json={
+            "snapshot_id": snapshot_id,
+            "name": f"Continuous Fine-tuning - {datetime.now().strftime('%Y-%m-%d')}",
+            "experiments": experiments
+        }
+    )
+
+    job_id = result["job_id"]
+
+    print(f"✓ Fine-tuning job started: {job_id}\n")
+    print("✓ Continuous fine-tuning cycle complete!\n")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as err:
+        print(f"\n✗ Error: {err}")
+        exit(1)
+```
+</CodeGroup>
+
+## Key Takeaways
+
+1. **Explicit Prerequisites**: This workflow requires a `PROJECT_ID` and `FINETUNED_MODEL_ALIAS` from a previous workflow. The `DATASET_ID` is automatically fetched from the project - no manual input needed!
+2. **Automated Evaluation**: Uses Claude 4.5 Sonnet as a judge to score responses (0-1 scale, where 0 is completely wrong and 1 is perfect)
+3. **Learn from ALL Traces**: **Critical** - Add ALL traces (both high and low-scoring) to the dataset! Low-scoring traces identify weaknesses
+4. **Automatic Correction**: The `addToDataset` endpoint automatically rewrites low-quality outputs using judge feedback, creating corrected training examples
+5. **Structured Evaluation**: The judge provides feedback, reasoning, and then score (in that order) for better evaluation quality
+6. **Targeted Improvement**: Each cycle adds new training data focusing on model weaknesses, creating progressively better models
+7. **Production-Ready**: Can be automated to run on a schedule, continuously improving your model with real-world data

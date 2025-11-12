@@ -63,8 +63,7 @@
                 "group": "Guides",
                 "icon": "newspaper",
                 "pages": [
-                  "guides/finetuning/lora-finetuning",
-                  "guides/finetuning/choose-reason-vs-non-reason"
+                  "guides/finetuning/lora-finetuning"
                 ]
               }
             ]
@@ -156,15 +155,16 @@
           {
             "group": "API Get Started",
             "pages": [
-              "api-reference/introduction",
-        {
-          "group": "Walkthroughs",
-          "pages": [
-            "api-reference/walkthroughs/jsonl-workflow",
-            "api-reference/walkthroughs/youtube-synthetic-workflow",
-            "api-reference/walkthroughs/pdf-synthetic-workflow"
-          ]
-        }
+              "api-reference/introduction"
+            ]
+          },
+          {
+            "group": "Walkthroughs 🎯",
+            "pages": [
+              "api-reference/walkthroughs/jsonl-workflow",
+              "api-reference/walkthroughs/youtube-synthetic-workflow",
+              "api-reference/walkthroughs/pdf-synthetic-workflow",
+              "api-reference/walkthroughs/continuous-finetuning-workflow"
             ]
           },
           {
@@ -186,8 +186,7 @@
           {
             "group": "Snapshots API",
             "pages": [
-              "api-reference/snapshots/post-snapshots-create",
-              "api-reference/snapshots/post-snapshots-create-from-files"
+              "api-reference/snapshots/post-snapshots-create"
             ]
           },
           {
@@ -213,17 +212,17 @@
           {
             "group": "Models API",
             "pages": [
-              "api-reference/models/get-models",
-              "api-reference/models/post-chatmodelup",
-              "api-reference/models/post-chatmodeldown",
-              "api-reference/models/get-chatmodelrunning"
+              "api-reference/models/get-models"
             ]
           },
           {
             "group": "Traces API",
             "pages": [
+              "api-reference/traces/post-traces",
               "api-reference/traces/get-trace",
-              "api-reference/traces/post-traces"
+              "api-reference/traces/put-trace",
+              "api-reference/traces/delete-trace",
+              "api-reference/traces/post-trace-add-to-dataset"
             ]
           }
         ]

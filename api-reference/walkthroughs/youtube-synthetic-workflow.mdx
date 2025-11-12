@@ -3,56 +3,201 @@ title: "YouTube Synthetic Dataset Workflow"
 description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots, and launch fine-tuning."
 ---
 
+## Overview
+
+This walkthrough demonstrates how to build a **stock analysis and investment tips extraction model** from YouTube financial content. You'll learn how to:
+
+- Process 5 YouTube videos about stocks and investing
+- Use **question/answer templates** to extract simple, structured JSON output
+- Generate training data that captures stock tickers, actionable tips, and risks mentioned
+- Create train/validation splits and get model recommendations
+- Launch fine-tuning to create a specialized financial intelligence model
+
+**Why This Matters**: Financial YouTube channels contain valuable insights, but this information is locked in video format. This workflow extracts structured intelligence from videos and transforms it into a model that can analyze financial content and output organized data.
+
+**What You'll Build**: A model that analyzes financial video transcripts and outputs clean JSON with:
+- `stocks_mentioned`: Array of ticker symbols (e.g., ["AAPL", "TSLA"])
+- `investment_tips`: List of actionable advice from the video
+- `risks_mentioned`: Warnings or cautionary statements discussed
+- `video_topic`: Brief description of the main topic
+
 <Note>
-  Export your Prem API key as `API_KEY` before running any script. Set `API_BASE_URL` (defaults to `https://localhost`).
-  Customize `USER_INSTRUCTIONS` based on your video's subject matter for better results.
+  Export your Prem API key as `API_KEY` before running any script.
+  The example uses 5 curated financial YouTube videos. You can modify the `YOUTUBE_URLS` array to use your own videos.
 </Note>
 
 
 <Steps>
   <Step>
+  # Setup: Define your YouTube URLs
+
+  <CodeGroup>
+  ```ts TypeScript
+  const API_KEY = process.env.API_KEY;
+
+  // Define the YouTube videos you want to analyze
+  const YOUTUBE_URLS = [
+    'https://www.youtube.com/watch?v=JH-k5f4Yclc',
+    'https://www.youtube.com/watch?v=YEWhxcpMS1c',
+    'https://www.youtube.com/watch?v=cb8up3HVXis',
+    'https://www.youtube.com/watch?v=26xatIiMv88',
+    'https://www.youtube.com/watch?v=-Da3gUdzCvs'
+  ];
+  ```
+  ```python Python
+  import os
+  import requests
+
+  API_KEY = os.getenv("API_KEY")
+
+  # Define the YouTube videos you want to analyze
+  YOUTUBE_URLS = [
+      "https://www.youtube.com/watch?v=JH-k5f4Yclc",
+      "https://www.youtube.com/watch?v=YEWhxcpMS1c",
+      "https://www.youtube.com/watch?v=cb8up3HVXis",
+      "https://www.youtube.com/watch?v=26xatIiMv88",
+      "https://www.youtube.com/watch?v=-Da3gUdzCvs"
+  ]
+  ```
+  </CodeGroup>
+
+  Define the YouTube video URLs you want to process. You can replace these with any financial or educational videos.
+  </Step>
+
+  <Step>
   # Create project and generate synthetic dataset
 
   <CodeGroup>
   ```ts TypeScript
-  const { project_id } = await api('/api/v1/public/projects/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/projects/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: 'YouTube AI Project', goal: 'Train from video content' })
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ name: 'Stock Analysis Project', goal: 'Extract investment insights from financial videos' })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { project_id } = await res.json();
 
   const formData = new FormData();
   formData.append('project_id', project_id);
-  formData.append('name', 'YouTube Dataset');
-  formData.append('youtube_urls[0]', YOUTUBE_URL);
+  formData.append('name', 'Financial YouTube Dataset');
+
+  // Add YouTube URLs
+  YOUTUBE_URLS.forEach((url: string, index: number) => {
+    formData.append(`youtube_urls[${index}]`, url);
+  });
+
   formData.append('pairs_to_generate', '50');
   formData.append('pair_type', 'qa');
-  formData.append('user_instructions', USER_INSTRUCTIONS);
+  formData.append('temperature', '0.3');
 
-  const { dataset_id } = await api('/api/v1/public/datasets/create-synthetic', {
+  // Add rules and constraints
+  formData.append('rules[]', 'stocks_mentioned: List all stock ticker symbols mentioned (e.g., AAPL, TSLA, NVDA)');
+  formData.append('rules[]', 'investment_tips: Extract 3-5 specific, actionable pieces of advice from the video');
+  formData.append('rules[]', 'risks_mentioned: List any warnings, risks, or cautionary statements discussed');
+  formData.append('rules[]', 'video_topic: Write a short phrase describing the main topic of the video');
+  formData.append('rules[]', 'Only output valid JSON with no additional text before or after');
+  formData.append('rules[]', 'If a field has no relevant information, use an empty array [] or empty string ""');
+  formData.append('rules[]', 'Use exact quotes or close paraphrases from the video content');
+  formData.append('rules[]', 'Do not invent or infer information not explicitly stated');
+
+  // Define question format
+  const questionFormat = `Extract investment information from the following video transcript:
+
+{VIDEO_TRANSCRIPT}
+
+Provide the output in this JSON format:
+{
+  "stocks_mentioned": ["TICKER1", "TICKER2"],
+  "investment_tips": ["tip 1", "tip 2", "tip 3"],
+  "risks_mentioned": ["risk 1", "risk 2"],
+  "video_topic": "brief description of main topic"
+}`;
+  formData.append('question_format', questionFormat);
+
+  // Define answer format
+  const answerFormat = `{
+  "stocks_mentioned": ["<TICKER_SYMBOL_1>", "<TICKER_SYMBOL_2>"],
+  "investment_tips": ["<specific_tip_1>", "<specific_tip_2>", "<specific_tip_3>"],
+  "risks_mentioned": ["<risk_or_warning_1>", "<risk_or_warning_2>"],
+  "video_topic": "<main_topic_of_video>"
+}`;
+  formData.append('answer_format', answerFormat);
+
+  const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-synthetic', {
     method: 'POST',
+    headers: { 'Authorization': `Bearer ${API_KEY}` },
     body: formData
   });
+  if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
+  const { dataset_id } = await res2.json();
   ```
   ```python Python
+  YOUTUBE_URLS = [
+      "https://www.youtube.com/watch?v=JH-k5f4Yclc",
+      "https://www.youtube.com/watch?v=YEWhxcpMS1c",
+      "https://www.youtube.com/watch?v=cb8up3HVXis",
+      "https://www.youtube.com/watch?v=26xatIiMv88",
+      "https://www.youtube.com/watch?v=-Da3gUdzCvs"
+  ]
+
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/projects/create",
+      "https://studio.premai.io/api/v1/public/projects/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"name": "YouTube AI Project", "goal": "Train from video content"}
+      json={"name": "Stock Analysis Project", "goal": "Extract investment insights from financial videos"}
   )
   response.raise_for_status()
   project_id = response.json()["project_id"]
 
+  # Define question format
+  question_format = """Extract investment information from the following video transcript:
+
+{VIDEO_TRANSCRIPT}
+
+Provide the output in this JSON format:
+{
+  "stocks_mentioned": ["TICKER1", "TICKER2"],
+  "investment_tips": ["tip 1", "tip 2", "tip 3"],
+  "risks_mentioned": ["risk 1", "risk 2"],
+  "video_topic": "brief description of main topic"
+}"""
+
+  # Define answer format
+  answer_format = """{
+  "stocks_mentioned": ["<TICKER_SYMBOL_1>", "<TICKER_SYMBOL_2>"],
+  "investment_tips": ["<specific_tip_1>", "<specific_tip_2>", "<specific_tip_3>"],
+  "risks_mentioned": ["<risk_or_warning_1>", "<risk_or_warning_2>"],
+  "video_topic": "<main_topic_of_video>"
+}"""
+
   form_data = {
       "project_id": project_id,
-      "name": "YouTube Dataset",
-      "youtube_urls[0]": YOUTUBE_URL,
+      "name": "Financial YouTube Dataset",
       "pairs_to_generate": "50",
       "pair_type": "qa",
-      "user_instructions": USER_INSTRUCTIONS
+      "temperature": "0.3",
+      "rules[]": [
+          "stocks_mentioned: List all stock ticker symbols mentioned (e.g., AAPL, TSLA, NVDA)",
+          "investment_tips: Extract 3-5 specific, actionable pieces of advice from the video",
+          "risks_mentioned: List any warnings, risks, or cautionary statements discussed",
+          "video_topic: Write a short phrase describing the main topic of the video",
+          "Only output valid JSON with no additional text before or after",
+          "If a field has no relevant information, use an empty array [] or empty string \"\"",
+          "Use exact quotes or close paraphrases from the video content",
+          "Do not invent or infer information not explicitly stated"
+      ],
+      "question_format": question_format,
+      "answer_format": answer_format
   }
+
+  # Add YouTube URLs
+  for i, url in enumerate(YOUTUBE_URLS):
+      form_data[f"youtube_urls[{i}]"] = url
+
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/datasets/create-synthetic",
+      "https://studio.premai.io/api/v1/public/datasets/create-synthetic",
       headers={"Authorization": f"Bearer {API_KEY}"},
       data=form_data
   )
@@ -61,7 +206,7 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
   ```
   </CodeGroup>
 
-  Create a project, then submit YouTube URLs to generate synthetic Q&A pairs. The generation can take 5-10 minutes.
+  Create a project, then submit 5 YouTube URLs about stocks and investing to generate synthetic Q&A pairs. The rules clearly define how each JSON field should be populated (stocks as tickers, tips as actionable advice, risks as warnings, topic as brief description). The generation can take 5-10 minutes.
   </Step>
 
   <Step>
@@ -73,7 +218,11 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
   let checks = 0;
   do {
     await sleep(5000);
-    dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+    const res = await fetch(`https://studio.premai.io/api/v1/public/datasets/${dataset_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    dataset = await res.json();
     if (checks++ % 6 === 0) {
       console.log(`Status: ${dataset.status}, ${dataset.datapoints_count} datapoints`);
     }
@@ -84,7 +233,7 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
   while True:
       time.sleep(5)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/datasets/{dataset_id}",
+          f"https://studio.premai.io/api/v1/public/datasets/{dataset_id}",
           headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
@@ -105,27 +254,40 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
 
   <CodeGroup>
   ```ts TypeScript
-  const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify({ dataset_id, split_percentage: 80 })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { snapshot_id } = await res.json();
 
-  await api('/api/v1/public/recommendations/generate', {
+  const res2 = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ snapshot_id, reasoning: false })
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ snapshot_id })
   });
+  if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
 
   let recs;
   do {
     await sleep(5000);
-    recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+    const res3 = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res3.ok) throw new Error(`${res3.status}: ${await res3.text()}`);
+    recs = await res3.json();
   } while (recs.status === 'processing');
   ```
   ```python Python
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/snapshots/create",
+      "https://studio.premai.io/api/v1/public/snapshots/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
       json={"dataset_id": dataset_id, "split_percentage": 80}
   )
@@ -133,18 +295,17 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
   snapshot_id = response.json()["snapshot_id"]
 
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/recommendations/generate",
+      "https://studio.premai.io/api/v1/public/recommendations/generate",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"snapshot_id": snapshot_id, "reasoning": False}
+      json={"snapshot_id": snapshot_id}
   )
   response.raise_for_status()
 
   while True:
       time.sleep(5)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/recommendations/{snapshot_id}",
-          headers={"Authorization": f"Bearer {API_KEY}"},
-          params={"reasoning": "false"}
+          f"https://studio.premai.io/api/v1/public/recommendations/{snapshot_id}",
+          headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
       recs = response.json()
@@ -161,45 +322,38 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
 
   <CodeGroup>
   ```ts TypeScript
-  const experiments = recs.recommended_models
-    .filter((m: any) => m.recommended)
-    .map((m: any) => ({
-      base_model_id: m.baseModelId,
-      batch_size: m.lora_hyperparameters.batchSize,
-      learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
-      n_epochs: m.lora_hyperparameters.nEpochs,
-      lora: true
-    }));
+  const experiments = recs.recommended_experiments
+    .filter((e: any) => e.recommended)
+    .map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
-  const { job_id } = await api('/api/v1/public/finetuning/create', {
+  const res = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ snapshot_id, name: 'YouTube Model', reasoning: false, experiments })
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ snapshot_id, name: 'YouTube Model', experiments })
   });
+  if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+  const { job_id } = await res.json();
   ```
   ```python Python
   experiments = [
-      {
-          "base_model_id": m["base_model_id"],
-          "batch_size": m["lora_hyperparameters"]["batch_size"],
-          "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
-          "n_epochs": m["lora_hyperparameters"]["n_epochs"],
-          "lora": True
-      }
-      for m in recs["recommended_models"] if m["recommended"]
+      {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+      for exp in recs["recommended_experiments"] if exp["recommended"]
   ]
 
   response = requests.post(
-      f"{API_BASE_URL}/api/v1/public/finetuning/create",
+      "https://studio.premai.io/api/v1/public/finetuning/create",
       headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
-      json={"snapshot_id": snapshot_id, "name": "YouTube Model", "reasoning": False, "experiments": experiments}
+      json={"snapshot_id": snapshot_id, "name": "YouTube Model", "experiments": experiments}
   )
   response.raise_for_status()
   job_id = response.json()["job_id"]
   ```
   </CodeGroup>
 
-  Filter recommended models and create a fine-tuning job using LoRA hyperparameters.
+  Filter recommended experiments and use them directly to launch the fine-tuning job.
   </Step>
 
   <Step>
@@ -209,7 +363,11 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
   ```ts TypeScript
   for (let i = 0; i < 30; i++) {
     await sleep(10000);
-    const job = await api(`/api/v1/public/finetuning/${job_id}`);
+    const res = await fetch(`https://studio.premai.io/api/v1/public/finetuning/${job_id}`, {
+      headers: { 'Authorization': `Bearer ${API_KEY}` }
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    const job = await res.json();
     console.log(`Status: ${job.status}`);
     job.experiments.forEach((e: any) => {
       console.log(`  - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
@@ -221,7 +379,7 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
   for i in range(30):
       time.sleep(10)
       response = requests.get(
-          f"{API_BASE_URL}/api/v1/public/finetuning/{job_id}",
+          f"https://studio.premai.io/api/v1/public/finetuning/{job_id}",
           headers={"Authorization": f"Bearer {API_KEY}"}
       )
       response.raise_for_status()
@@ -249,33 +407,19 @@ description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots
  * 1. Create project → 2. Generate synthetic data from YouTube → 3. Create snapshot → 4. Get recommendations → 5. Run finetuning
  */
 
-const API_BASE_URL = process.env.API_BASE_URL || 'https://localhost';
 const API_KEY = process.env.API_KEY;
-const YOUTUBE_URL = 'https://www.youtube.com/watch?v=51y4KatMBFI';
-
-const USER_INSTRUCTIONS =
-	'Generate detailed question-answer pairs about the key concepts, main topics, important details, and technical information presented in the video. Focus on extracting specific facts, explanations, definitions, examples, and insights that are directly mentioned or demonstrated. Create questions that test understanding of the core subject matter and provide comprehensive answers based on the video content.';
-
-// Disable TLS verification for local development with self-signed certs
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+const YOUTUBE_URLS = [
+	'https://www.youtube.com/watch?v=JH-k5f4Yclc',
+	'https://www.youtube.com/watch?v=YEWhxcpMS1c',
+	'https://www.youtube.com/watch?v=cb8up3HVXis',
+	'https://www.youtube.com/watch?v=26xatIiMv88',
+	'https://www.youtube.com/watch?v=-Da3gUdzCvs'
+];
 
 if (!API_KEY) {
 	console.error('Error: API_KEY environment variable is required');
 	console.error('Please create a .env file based on .env.example');
 	process.exit(1);
-}
-
-async function api(endpoint: string, options: any = {}): Promise<any> {
-	const res = await fetch(`${API_BASE_URL}${endpoint}`, {
-		...options,
-		headers: { Authorization: `Bearer ${API_KEY}`, ...options.headers },
-	});
-	if (!res.ok) {
-		const err: any = await res.json().catch(() => ({}));
-		const errorMsg = typeof err.error === 'string' ? err.error : JSON.stringify(err);
-		throw new Error(`${res.status}: ${errorMsg}`);
-	}
-	return res.json();
 }
 
 function sleep(ms: number) {
@@ -287,28 +431,74 @@ async function main() {
 
 	// 1. Create project
 	console.log('1. Creating project...');
-	const { project_id } = await api('/api/v1/public/projects/create', {
+	const res1 = await fetch('https://studio.premai.io/api/v1/public/projects/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ name: 'YouTube AI Project', goal: 'Train from video content' }),
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ name: 'Stock Analysis Project', goal: 'Extract investment insights from financial videos' }),
 	});
+	if (!res1.ok) throw new Error(`${res1.status}: ${await res1.text()}`);
+	const { project_id } = await res1.json();
 	console.log(`   ✓ Project: ${project_id}\n`);
 
 	// 2. Generate synthetic dataset
 	console.log('2. Generating synthetic dataset from YouTube...');
-	console.log(`   URL: ${YOUTUBE_URL}`);
+	console.log(`   URLs: ${YOUTUBE_URLS.length} financial videos`);
 	const formData = new FormData();
 	formData.append('project_id', project_id);
-	formData.append('name', 'YouTube Dataset');
-	formData.append('youtube_urls[0]', YOUTUBE_URL);
+	formData.append('name', 'Financial YouTube Dataset');
+
+	// Add multiple YouTube URLs
+	YOUTUBE_URLS.forEach((url, index) => {
+		formData.append(`youtube_urls[${index}]`, url);
+	});
+
 	formData.append('pairs_to_generate', '50');
 	formData.append('pair_type', 'qa');
-	formData.append('user_instructions', USER_INSTRUCTIONS);
+	formData.append('temperature', '0.3');
 
-	const { dataset_id } = await api('/api/v1/public/datasets/create-synthetic', {
+	// Add rules and constraints
+	formData.append('rules[]', 'stocks_mentioned: List all stock ticker symbols mentioned (e.g., AAPL, TSLA, NVDA)');
+	formData.append('rules[]', 'investment_tips: Extract 3-5 specific, actionable pieces of advice from the video');
+	formData.append('rules[]', 'risks_mentioned: List any warnings, risks, or cautionary statements discussed');
+	formData.append('rules[]', 'video_topic: Write a short phrase describing the main topic of the video');
+	formData.append('rules[]', 'Only output valid JSON with no additional text before or after');
+	formData.append('rules[]', 'If a field has no relevant information, use an empty array [] or empty string ""');
+	formData.append('rules[]', 'Use exact quotes or close paraphrases from the video content');
+	formData.append('rules[]', 'Do not invent or infer information not explicitly stated');
+
+	// Define question format
+	const questionFormat = `Extract investment information from the following video transcript:
+
+{VIDEO_TRANSCRIPT}
+
+Provide the output in this JSON format:
+{
+  "stocks_mentioned": ["TICKER1", "TICKER2"],
+  "investment_tips": ["tip 1", "tip 2", "tip 3"],
+  "risks_mentioned": ["risk 1", "risk 2"],
+  "video_topic": "brief description of main topic"
+}`;
+	formData.append('question_format', questionFormat);
+
+	// Define answer format
+	const answerFormat = `{
+  "stocks_mentioned": ["<TICKER_SYMBOL_1>", "<TICKER_SYMBOL_2>"],
+  "investment_tips": ["<specific_tip_1>", "<specific_tip_2>", "<specific_tip_3>"],
+  "risks_mentioned": ["<risk_or_warning_1>", "<risk_or_warning_2>"],
+  "video_topic": "<main_topic_of_video>"
+}`;
+	formData.append('answer_format', answerFormat);
+
+	const res2 = await fetch('https://studio.premai.io/api/v1/public/datasets/create-synthetic', {
 		method: 'POST',
+		headers: { 'Authorization': `Bearer ${API_KEY}` },
 		body: formData,
 	});
+	if (!res2.ok) throw new Error(`${res2.status}: ${await res2.text()}`);
+	const { dataset_id } = await res2.json();
 	console.log(`   ✓ Dataset: ${dataset_id}`);
 
 	// Wait for dataset (can take several minutes)
@@ -317,7 +507,11 @@ async function main() {
 	let checks = 0;
 	do {
 		await sleep(5000);
-		dataset = await api(`/api/v1/public/datasets/${dataset_id}`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/datasets/${dataset_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		dataset = await res.json();
 		if (checks++ % 6 === 0) {
 			console.log(`   Status: ${dataset.status}, ${dataset.datapoints_count} datapoints`);
 		}
@@ -326,64 +520,80 @@ async function main() {
 
 	// 3. Create snapshot
 	console.log('3. Creating snapshot...');
-	const { snapshot_id } = await api('/api/v1/public/snapshots/create', {
+	const res3 = await fetch('https://studio.premai.io/api/v1/public/snapshots/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
 		body: JSON.stringify({ dataset_id, split_percentage: 80 }),
 	});
+	if (!res3.ok) throw new Error(`${res3.status}: ${await res3.text()}`);
+	const { snapshot_id } = await res3.json();
 	console.log(`   ✓ Snapshot: ${snapshot_id}\n`);
 
 	// 4. Generate recommendations
 	console.log('4. Generating recommendations...');
-	await api('/api/v1/public/recommendations/generate', {
+	const res4 = await fetch('https://studio.premai.io/api/v1/public/recommendations/generate', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ snapshot_id, reasoning: false }),
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ snapshot_id }),
 	});
+	if (!res4.ok) throw new Error(`${res4.status}: ${await res4.text()}`);
 
 	let recs;
 	do {
 		await sleep(5000);
-		recs = await api(`/api/v1/public/recommendations/${snapshot_id}?reasoning=false`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/recommendations/${snapshot_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		recs = await res.json();
 	} while (recs.status === 'processing');
 
-	console.log(`   ✓ Recommended models:`);
-	const recommendedCount = recs.recommended_models.filter((m: any) => m.recommended).length;
-	console.log(`   Total models: ${recs.recommended_models.length}, Recommended: ${recommendedCount}`);
-	recs.recommended_models.forEach((m: any) => {
-		if (m.recommended) console.log(`     - ${m.baseModelId}`);
+	console.log(`   ✓ Recommended experiments:`);
+	const recommendedCount = recs.recommended_experiments.filter((e: any) => e.recommended).length;
+	console.log(`   Total experiments: ${recs.recommended_experiments.length}, Recommended: ${recommendedCount}`);
+	recs.recommended_experiments.forEach((e: any) => {
+		if (e.recommended) console.log(`     - ${e.base_model_id} (LoRA: ${e.lora})`);
 	});
 	console.log();
 
 	// 5. Create finetuning job
 	console.log('5. Creating finetuning job...');
-	const experiments = recs.recommended_models
-		.filter((m: any) => m.recommended)
-		.map((m: any) => ({
-			base_model_id: m.baseModelId,
-			batch_size: m.lora_hyperparameters.batchSize,
-			learning_rate_multiplier: m.lora_hyperparameters.learningRateMultiplier,
-			n_epochs: m.lora_hyperparameters.nEpochs,
-			lora: true,
-		}));
+	const experiments = recs.recommended_experiments
+		.filter((e: any) => e.recommended)
+		.map(({ recommended, reason_for_recommendation, ...experiment }: any) => experiment);
 
 	if (experiments.length === 0) {
-		console.error('\n✗ Error: No recommended models found. Cannot create finetuning job.');
+		console.error('\n✗ Error: No recommended experiments found. Cannot create finetuning job.');
 		process.exit(1);
 	}
 
-	const { job_id } = await api('/api/v1/public/finetuning/create', {
+	const res5 = await fetch('https://studio.premai.io/api/v1/public/finetuning/create', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ snapshot_id, name: 'YouTube Model', reasoning: false, experiments }),
+		headers: {
+			'Authorization': `Bearer ${API_KEY}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ snapshot_id, name: 'YouTube Model', experiments }),
 	});
+	if (!res5.ok) throw new Error(`${res5.status}: ${await res5.text()}`);
+	const { job_id } = await res5.json();
 	console.log(`   ✓ Job: ${job_id}\n`);
 
 	// 6. Monitor (5 minutes max)
 	console.log('6. Monitoring job...');
 	for (let i = 0; i < 30; i++) {
 		await sleep(10000);
-		const job = await api(`/api/v1/public/finetuning/${job_id}`);
+		const res = await fetch(`https://studio.premai.io/api/v1/public/finetuning/${job_id}`, {
+			headers: { 'Authorization': `Bearer ${API_KEY}` }
+		});
+		if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+		const job = await res.json();
 		console.log(`   Status: ${job.status}`);
 		job.experiments.forEach((e: any) => {
 			console.log(`     - Exp #${e.experiment_number}: ${e.status} ${e.model_id || ''}`);
@@ -411,16 +621,14 @@ import os
 import time
 import requests
 
-API_BASE_URL = os.getenv("API_BASE_URL", "https://localhost")
 API_KEY = os.getenv("API_KEY")
-YOUTUBE_URL = "https://www.youtube.com/watch?v=51y4KatMBFI"
-
-USER_INSTRUCTIONS = (
-    "Generate detailed question-answer pairs about the key concepts, main topics, important details, "
-    "and technical information presented in the video. Focus on extracting specific facts, explanations, "
-    "definitions, examples, and insights that are directly mentioned or demonstrated. Create questions "
-    "that test understanding of the core subject matter and provide comprehensive answers based on the video content."
-)
+YOUTUBE_URLS = [
+    "https://www.youtube.com/watch?v=JH-k5f4Yclc",
+    "https://www.youtube.com/watch?v=YEWhxcpMS1c",
+    "https://www.youtube.com/watch?v=cb8up3HVXis",
+    "https://www.youtube.com/watch?v=26xatIiMv88",
+    "https://www.youtube.com/watch?v=-Da3gUdzCvs"
+]
 
 if not API_KEY:
     print("Error: API_KEY environment variable is required")
@@ -430,7 +638,7 @@ if not API_KEY:
 def api(endpoint: str, method: str = "GET", **kwargs):
     response = requests.request(
         method=method,
-        url=f"{API_BASE_URL}{endpoint}",
+        url=f"https://studio.premai.io{endpoint}",
         headers={"Authorization": f"Bearer {API_KEY}", **kwargs.pop("headers", {})},
         **kwargs
     )
@@ -446,21 +654,59 @@ def main():
 
     # Create project
     print("1. Creating project...")
-    result = api("/api/v1/public/projects/create", method="POST", headers={"Content-Type": "application/json"}, json={"name": "YouTube AI Project", "goal": "Train from video content"})
+    result = api("/api/v1/public/projects/create", method="POST", headers={"Content-Type": "application/json"}, json={"name": "Stock Analysis Project", "goal": "Extract investment insights from financial videos"})
     project_id = result["project_id"]
     print(f"   ✓ Project: {project_id}\n")
 
     # Generate synthetic dataset
     print("2. Generating synthetic dataset from YouTube...")
-    print(f"   URL: {YOUTUBE_URL}")
+    print(f"   URLs: {len(YOUTUBE_URLS)} financial videos")
+
+    # Define question format
+    question_format = """Extract investment information from the following video transcript:
+
+{VIDEO_TRANSCRIPT}
+
+Provide the output in this JSON format:
+{
+  "stocks_mentioned": ["TICKER1", "TICKER2"],
+  "investment_tips": ["tip 1", "tip 2", "tip 3"],
+  "risks_mentioned": ["risk 1", "risk 2"],
+  "video_topic": "brief description of main topic"
+}"""
+
+    # Define answer format
+    answer_format = """{
+  "stocks_mentioned": ["<TICKER_SYMBOL_1>", "<TICKER_SYMBOL_2>"],
+  "investment_tips": ["<specific_tip_1>", "<specific_tip_2>", "<specific_tip_3>"],
+  "risks_mentioned": ["<risk_or_warning_1>", "<risk_or_warning_2>"],
+  "video_topic": "<main_topic_of_video>"
+}"""
+
     form_data = {
         "project_id": project_id,
-        "name": "YouTube Dataset",
-        "youtube_urls[0]": YOUTUBE_URL,
+        "name": "Financial YouTube Dataset",
         "pairs_to_generate": "50",
         "pair_type": "qa",
-        "user_instructions": USER_INSTRUCTIONS
+        "temperature": "0.3",
+        "rules[]": [
+            "stocks_mentioned: List all stock ticker symbols mentioned (e.g., AAPL, TSLA, NVDA)",
+            "investment_tips: Extract 3-5 specific, actionable pieces of advice from the video",
+            "risks_mentioned: List any warnings, risks, or cautionary statements discussed",
+            "video_topic: Write a short phrase describing the main topic of the video",
+            "Only output valid JSON with no additional text before or after",
+            "If a field has no relevant information, use an empty array [] or empty string \"\"",
+            "Use exact quotes or close paraphrases from the video content",
+            "Do not invent or infer information not explicitly stated"
+        ],
+        "question_format": question_format,
+        "answer_format": answer_format
     }
+
+    # Add YouTube URLs
+    for i, url in enumerate(YOUTUBE_URLS):
+        form_data[f"youtube_urls[{i}]"] = url
+
     result = api("/api/v1/public/datasets/create-synthetic", method="POST", data=form_data)
     dataset_id = result["dataset_id"]
     print(f"   ✓ Dataset: {dataset_id}")
@@ -486,40 +732,34 @@ def main():
 
     # Generate recommendations
     print("4. Generating recommendations...")
-    api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "reasoning": False})
+    api("/api/v1/public/recommendations/generate", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id})
 
     while True:
         time.sleep(5)
-        recs = api(f"/api/v1/public/recommendations/{snapshot_id}", params={"reasoning": "false"})
+        recs = api(f"/api/v1/public/recommendations/{snapshot_id}")
         if recs["status"] != "processing":
             break
 
-    print("   ✓ Recommended models:")
-    recommended_count = sum(1 for m in recs["recommended_models"] if m["recommended"])
-    print(f"   Total models: {len(recs['recommended_models'])}, Recommended: {recommended_count}")
-    for m in recs["recommended_models"]:
-        if m["recommended"]:
-            print(f"     - {m['base_model_id']}")
+    print("   ✓ Recommended experiments:")
+    recommended_count = sum(1 for e in recs["recommended_experiments"] if e["recommended"])
+    print(f"   Total experiments: {len(recs['recommended_experiments'])}, Recommended: {recommended_count}")
+    for e in recs["recommended_experiments"]:
+        if e["recommended"]:
+            print(f"     - {e['base_model_id']} (LoRA: {e['lora']})")
     print()
 
     # Create finetuning job
     print("5. Creating finetuning job...")
     experiments = [
-        {
-            "base_model_id": m["base_model_id"],
-            "batch_size": m["lora_hyperparameters"]["batch_size"],
-            "learning_rate_multiplier": m["lora_hyperparameters"]["learning_rate_multiplier"],
-            "n_epochs": m["lora_hyperparameters"]["n_epochs"],
-            "lora": True
-        }
-        for m in recs["recommended_models"] if m["recommended"]
+        {k: v for k, v in exp.items() if k not in ["recommended", "reason_for_recommendation"]}
+        for exp in recs["recommended_experiments"] if exp["recommended"]
     ]
 
     if not experiments:
-        print("\n✗ Error: No recommended models found. Cannot create finetuning job.")
+        print("\n✗ Error: No recommended experiments found. Cannot create finetuning job.")
         exit(1)
 
-    result = api("/api/v1/public/finetuning/create", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "name": "YouTube Model", "reasoning": False, "experiments": experiments})
+    result = api("/api/v1/public/finetuning/create", method="POST", headers={"Content-Type": "application/json"}, json={"snapshot_id": snapshot_id, "name": "YouTube Model", "experiments": experiments})
     job_id = result["job_id"]
     print(f"   ✓ Job: {job_id}\n")
 
