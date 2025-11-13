@@ -23,7 +23,6 @@
             "group": "Get started",
             "pages": [
               "index",
-              "get-started/quick-start",
               "get-started/sdks"
             ]
           },
@@ -106,38 +105,9 @@
             ]
           },
           {
-            "group": "Examples 📖",
-            "pages": [
-              "examples/invoice-example"
-            ]
-          },
-          {
-            "group": "Playground 🛝",
-            "pages": [
-              "playground/overview"
-            ]
-          },
-          {
-            "group": "Stats 📊",
-            "pages": [
-              "stats/overview"
-            ]
-          },
-          {
             "group": "Resources 🧰 ",
             "pages": [
               "resources/faq"
-            ]
-          },
-          {
-            "group": "Cookbook 🍳",
-            "pages": [
-              {
-                "group": "Integrations",
-                "pages": [
-                  "cookbook/integrations/pydantic"
-                ]
-              }
             ]
           }
         ]
