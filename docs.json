@@ -154,7 +154,8 @@
           {
             "group": "API Get Started",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/api-key"
             ]
           },
           {
@@ -191,15 +192,15 @@
           {
             "group": "Recommendations API",
             "pages": [
-              "api-reference/recommendations/get-recommendations-snapshotid",
-              "api-reference/recommendations/post-recommendations-generate"
+              "api-reference/recommendations/post-recommendations-generate",
+              "api-reference/recommendations/get-recommendations-snapshotid"
             ]
           },
           {
             "group": "Fine-Tuning API",
             "pages": [
-              "api-reference/finetuning/get-finetuning-jobid",
-              "api-reference/finetuning/post-finetuning-create"
+              "api-reference/finetuning/post-finetuning-create",
+              "api-reference/finetuning/get-finetuning-jobid"
             ]
           },
           {
