@@ -1,25 +1,15 @@
 ---
-title: "YouTube Synthetic Dataset Workflow"
+title: "Fine-Tune with YouTube Synthetic Dataset"
 description: "Generate synthetic Q&A pairs from YouTube videos, create snapshots, and launch fine-tuning."
 ---
 
 ## Overview
 
-This walkthrough demonstrates how to build a **stock analysis and investment tips extraction model** from YouTube financial content. You'll learn how to:
-
-- Process 5 YouTube videos about stocks and investing
-- Use **question/answer templates** to extract simple, structured JSON output
-- Generate training data that captures stock tickers, actionable tips, and risks mentioned
-- Create train/validation splits and get model recommendations
-- Launch fine-tuning to create a specialized financial intelligence model
-
-**Why This Matters**: Financial YouTube channels contain valuable insights, but this information is locked in video format. This workflow extracts structured intelligence from videos and transforms it into a model that can analyze financial content and output organized data.
-
-**What You'll Build**: A model that analyzes financial video transcripts and outputs clean JSON with:
-- `stocks_mentioned`: Array of ticker symbols (e.g., ["AAPL", "TSLA"])
-- `investment_tips`: List of actionable advice from the video
-- `risks_mentioned`: Warnings or cautionary statements discussed
-- `video_topic`: Brief description of the main topic
+Build a model that extracts structured data from YouTube videos:
+- Process YouTube videos to generate synthetic training data
+- Use question/answer templates to extract JSON output
+- Extract stock tickers, investment tips, risks, and topics
+- Create snapshots, get recommendations, and launch fine-tuning
 
 <Note>
   Export your Prem API key as `API_KEY` before running any script.
@@ -29,7 +19,7 @@ This walkthrough demonstrates how to build a **stock analysis and investment tip
 
 <Steps>
   <Step>
-  # Setup: Define your YouTube URLs
+  # Set YouTube URLs
 
   <CodeGroup>
   ```ts TypeScript
@@ -61,11 +51,12 @@ This walkthrough demonstrates how to build a **stock analysis and investment tip
   ```
   </CodeGroup>
 
-  Define the YouTube video URLs you want to process. You can replace these with any financial or educational videos.
   </Step>
 
   <Step>
-  # Create project and generate synthetic dataset
+  # Generate dataset from YouTube
+
+  Create a project and generate synthetic Q&A pairs from YouTube videos. See [Create Project](/api-reference/projects/post-projects-create) and [Create Synthetic Dataset](/api-reference/datasets/post-datasets-create-synthetic) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -206,11 +197,13 @@ Provide the output in this JSON format:
   ```
   </CodeGroup>
 
-  Create a project, then submit 5 YouTube URLs about stocks and investing to generate synthetic Q&A pairs. The rules clearly define how each JSON field should be populated (stocks as tickers, tips as actionable advice, risks as warnings, topic as brief description). The generation can take 5-10 minutes.
+  Generation can take 5-10 minutes.
   </Step>
 
   <Step>
-  # Wait for dataset generation
+  # Wait for generation
+
+  Poll the dataset status until generation completes. See [Get Dataset](/api-reference/datasets/get-datasets-datasetid) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -246,11 +239,12 @@ Provide the output in this JSON format:
   ```
   </CodeGroup>
 
-  Poll the dataset status every 5 seconds. Log progress every 30 seconds to avoid spam.
   </Step>
 
   <Step>
   # Create snapshot and get recommendations
+
+  Create a snapshot and generate model recommendations. See [Create Snapshot](/api-reference/snapshots/post-snapshots-create), [Generate Recommendations](/api-reference/recommendations/post-recommendations-generate), and [Get Recommendations](/api-reference/recommendations/get-recommendations-snapshotid) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -314,11 +308,12 @@ Provide the output in this JSON format:
   ```
   </CodeGroup>
 
-  Create a snapshot with 80/20 train/validation split, then request model recommendations.
   </Step>
 
   <Step>
-  # Launch fine-tuning job
+  # Start fine-tuning
+
+  Launch a fine-tuning job with recommended experiments. See [Create Fine-Tuning Job](/api-reference/finetuning/post-finetuning-create) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -353,11 +348,10 @@ Provide the output in this JSON format:
   ```
   </CodeGroup>
 
-  Filter recommended experiments and use them directly to launch the fine-tuning job.
   </Step>
 
   <Step>
-  # Monitor job progress
+  # Monitor job
 
   <CodeGroup>
   ```ts TypeScript
@@ -392,7 +386,7 @@ Provide the output in this JSON format:
   ```
   </CodeGroup>
 
-  Poll job status every 10 seconds. Each experiment shows its progress and final model ID.
+  Monitor fine-tuning job progress and status. See [Get Fine-Tuning Job](/api-reference/finetuning/get-finetuning-jobid) for details.
   </Step>
 </Steps>
 
