@@ -1,27 +1,16 @@
 ---
-title: "Continuous Fine-Tuning with Traces"
-description: "Use traces to continuously improve your models by evaluating responses, gathering feedback, and iteratively fine-tuning."
+title: "Continuous Fine-Tuning"
+description: "Use traces to continuously improve your models by evaluating responses and iteratively fine-tuning."
 ---
 
 ## Overview
 
-This walkthrough demonstrates how to implement **continuous fine-tuning** using traces. You'll learn how to:
-
-- Use your fine-tuned model for inference
-- Automatically evaluate model responses using a judge model (Claude 4.5 Sonnet)
-- Create traces with scores and feedback
-- Add **ALL** traces to your dataset (both successes and failures)
-- Let the API automatically improve low-quality outputs using judge feedback
-- Create new snapshots and launch iterative fine-tuning jobs that fix model weaknesses
-
-**Why This Matters**: Models improve over time when you continuously gather production data, evaluate it, and learn from **both successes and failures**. Low-scoring responses identify where your model is weak - these are automatically corrected and used for training, so your model gets better at exactly what it struggles with. This creates a virtuous cycle of targeted improvement.
-
-**What You'll Build**: A continuous fine-tuning loop that:
-1. Generates responses from your fine-tuned model **using domain-specific test prompts**
-2. Uses an AI judge to evaluate response quality (0-1 scale: feedback → reasoning → score)
-3. Creates traces with structured feedback
-4. Adds **ALL** traces to your dataset (both high and low-scoring) - low-scoring traces are automatically improved by the API
-5. Triggers a new fine-tuning job that learns from both successes AND corrected failures
+Continuously improve your fine-tuned model by:
+- Testing with domain-specific prompts
+- Evaluating responses with a judge model (Claude 4.5 Sonnet)
+- Creating traces with scores and feedback
+- Adding all traces to your dataset (low-scoring traces are automatically improved)
+- Launching new fine-tuning jobs that learn from both successes and corrected failures
 
 <Warning>
   **CRITICAL**: This workflow requires you to provide test prompts that match your fine-tuned model's domain. Generic prompts will produce useless results. For example:
@@ -42,7 +31,7 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
 
 <Steps>
   <Step>
-  # Define initial parameters and fetch dataset from project
+  # Setup
 
   <CodeGroup>
   ```ts TypeScript
@@ -87,10 +76,14 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
   ]
   ```
   </CodeGroup>
+
+  Fetch project details to get the dataset ID. See [Get Project](/api-reference/projects/get-projects-projectid) for details.
   </Step>
 
   <Step>
-  # Generate responses from your fine-tuned model
+  # Test model with prompts
+
+  Generate responses from your fine-tuned model using test prompts. See [Chat Completions](/api-reference/chat-completions/post-chatcompletions) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -167,7 +160,9 @@ This walkthrough demonstrates how to implement **continuous fine-tuning** using 
   </Step>
 
   <Step>
-  # Evaluate responses with judge model
+  # Score responses with judge
+
+  Use a judge model to evaluate response quality. See [Chat Completions](/api-reference/chat-completions/post-chatcompletions) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -280,7 +275,9 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
   </Step>
 
   <Step>
-  # Create traces
+  # Create traces with scores
+
+  Create traces with evaluation scores and feedback. See [Create Trace](/api-reference/traces/post-traces) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -331,7 +328,7 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
   </Step>
 
   <Step>
-  # Add all traces to dataset
+  # Add traces to dataset
 
   <CodeGroup>
   ```ts TypeScript
@@ -353,11 +350,13 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
   ```
   </CodeGroup>
 
-  Add all traces to dataset. Low-scoring traces are automatically improved by the API using judge feedback.
+  Add traces to your dataset. Low-scoring traces are automatically improved using judge feedback. See [Add Trace to Dataset](/api-reference/traces/post-trace-add-to-dataset) for details.
   </Step>
 
   <Step>
   # Create snapshot
+
+  Create a snapshot with train/validation split. See [Create Snapshot](/api-reference/snapshots/post-snapshots-create) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -388,7 +387,9 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
   </Step>
 
   <Step>
-  # Generate recommendations
+  # Get model recommendations
+
+  Generate and retrieve model recommendations for your snapshot. See [Generate Recommendations](/api-reference/recommendations/post-recommendations-generate) and [Get Recommendations](/api-reference/recommendations/get-recommendations-snapshotid) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -425,7 +426,9 @@ Provide your evaluation in the following JSON format (output ONLY the JSON, no o
   </Step>
 
   <Step>
-  # Launch fine-tuning job
+  # Start fine-tuning job
+
+  Launch a fine-tuning job with recommended experiments. See [Create Fine-Tuning Job](/api-reference/finetuning/post-finetuning-create) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -1009,10 +1012,7 @@ if __name__ == "__main__":
 
 ## Key Takeaways
 
-1. **Explicit Prerequisites**: This workflow requires a `PROJECT_ID` and `FINETUNED_MODEL_ALIAS` from a previous workflow. The `DATASET_ID` is automatically fetched from the project - no manual input needed!
-2. **Automated Evaluation**: Uses Claude 4.5 Sonnet as a judge to score responses (0-1 scale, where 0 is completely wrong and 1 is perfect)
-3. **Learn from ALL Traces**: **Critical** - Add ALL traces (both high and low-scoring) to the dataset! Low-scoring traces identify weaknesses
-4. **Automatic Correction**: The `addToDataset` endpoint automatically rewrites low-quality outputs using judge feedback, creating corrected training examples
-5. **Structured Evaluation**: The judge provides feedback, reasoning, and then score (in that order) for better evaluation quality
-6. **Targeted Improvement**: Each cycle adds new training data focusing on model weaknesses, creating progressively better models
-7. **Production-Ready**: Can be automated to run on a schedule, continuously improving your model with real-world data
+1. Requires `PROJECT_ID` and `FINETUNED_MODEL_ALIAS` from a previous workflow. `DATASET_ID` is auto-fetched.
+2. Uses Claude 4.5 Sonnet to score responses (0-1 scale).
+3. Add ALL traces to the dataset - low-scoring traces are automatically improved.
+4. Each cycle adds training data focusing on model weaknesses.

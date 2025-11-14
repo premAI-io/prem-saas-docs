@@ -23,7 +23,6 @@
             "group": "Get started",
             "pages": [
               "index",
-              "get-started/quick-start",
               "get-started/sdks"
             ]
           },
@@ -106,39 +105,9 @@
             ]
           },
           {
-            "group": "Examples 📖",
-            "pages": [
-              "examples/invoice-example"
-            ]
-          },
-          {
-            "group": "Playground 🛝",
-            "pages": [
-              "playground/overview"
-            ]
-          },
-          {
-            "group": "Stats 📊",
-            "pages": [
-              "stats/overview"
-            ]
-          },
-          {
             "group": "Resources 🧰 ",
             "pages": [
-              "resources/faq",
-              "resources/available-models"
-            ]
-          },
-          {
-            "group": "Cookbook 🍳",
-            "pages": [
-              {
-                "group": "Integrations",
-                "pages": [
-                  "cookbook/integrations/pydantic"
-                ]
-              }
+              "resources/faq"
             ]
           }
         ]
@@ -155,7 +124,8 @@
           {
             "group": "API Get Started",
             "pages": [
-              "api-reference/introduction"
+              "api-reference/introduction",
+              "api-reference/api-key"
             ]
           },
           {
@@ -192,15 +162,15 @@
           {
             "group": "Recommendations API",
             "pages": [
-              "api-reference/recommendations/get-recommendations-snapshotid",
-              "api-reference/recommendations/post-recommendations-generate"
+              "api-reference/recommendations/post-recommendations-generate",
+              "api-reference/recommendations/get-recommendations-snapshotid"
             ]
           },
           {
             "group": "Fine-Tuning API",
             "pages": [
-              "api-reference/finetuning/get-finetuning-jobid",
-              "api-reference/finetuning/post-finetuning-create"
+              "api-reference/finetuning/post-finetuning-create",
+              "api-reference/finetuning/get-finetuning-jobid"
             ]
           },
           {

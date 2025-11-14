@@ -1,21 +1,15 @@
 ---
-title: "PDF Synthetic Dataset Workflow"
+title: "Fine-Tune with PDF Synthetic Dataset"
 description: "Generate synthetic Q&A pairs from PDF documents, create snapshots, and launch fine-tuning."
 ---
 
 ## Overview
 
-This walkthrough demonstrates how to build a **structured data extraction model** from invoice receipts. You'll learn how to:
-
-- Upload multiple invoice PDFs to generate synthetic training data
-- Use **question/answer templates** to enforce strict JSON output format
-- Extract key fields like date, amount, currency, business name, and location
-- Create train/validation splits and get model recommendations
-- Launch fine-tuning jobs to create a production-ready extraction model
-
-**Why This Matters**: Many businesses need to automatically extract structured information from semi-structured documents (invoices, receipts, forms). This workflow shows you how to fine-tune a model that reliably outputs JSON with specific fields, without manual labeling.
-
-**What You'll Build**: A model that takes invoice text as input and returns structured JSON with transaction details.
+Build a structured data extraction model from PDFs:
+- Upload PDFs to generate synthetic training data
+- Use question/answer templates to enforce JSON output format
+- Extract fields like date, amount, currency, business name, and location
+- Create snapshots, get recommendations, and launch fine-tuning
 
 <Note>
   Export your Prem API key as `API_KEY` before running any script.
@@ -25,7 +19,7 @@ This walkthrough demonstrates how to build a **structured data extraction model*
 
 <Steps>
   <Step>
-  # Setup: Define your PDF files
+  # Set PDF file paths
 
   <CodeGroup>
   ```ts TypeScript
@@ -45,11 +39,12 @@ This walkthrough demonstrates how to build a **structured data extraction model*
   ```
   </CodeGroup>
 
-  Define the PDF files you want to process. Make sure these files exist in your working directory.
   </Step>
 
   <Step>
-  # Create project and generate synthetic dataset from PDF
+  # Generate dataset from PDFs
+
+  Create a project and generate synthetic Q&A pairs from PDF files. See [Create Project](/api-reference/projects/post-projects-create) and [Create Synthetic Dataset](/api-reference/datasets/post-datasets-create-synthetic) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -193,11 +188,12 @@ JSON Schema:
   ```
   </CodeGroup>
 
-  Create a project, then upload multiple PDF invoice files to generate synthetic Q&A pairs that extract structured JSON data. The generation can take 5-10 minutes depending on document size.
   </Step>
 
   <Step>
-  # Wait for dataset generation
+  # Wait for generation
+
+  Poll the dataset status until generation completes. See [Get Dataset](/api-reference/datasets/get-datasets-datasetid) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -233,11 +229,12 @@ JSON Schema:
   ```
   </CodeGroup>
 
-  Poll the dataset status every 5 seconds. Log progress every 30 seconds to avoid spam.
   </Step>
 
   <Step>
   # Create snapshot and get recommendations
+
+  Create a snapshot and generate model recommendations. See [Create Snapshot](/api-reference/snapshots/post-snapshots-create), [Generate Recommendations](/api-reference/recommendations/post-recommendations-generate), and [Get Recommendations](/api-reference/recommendations/get-recommendations-snapshotid) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -301,11 +298,12 @@ JSON Schema:
   ```
   </CodeGroup>
 
-  Create a snapshot with 80/20 train/validation split, then request model recommendations.
   </Step>
 
   <Step>
-  # Launch fine-tuning job
+  # Start fine-tuning
+
+  Launch a fine-tuning job with recommended experiments. See [Create Fine-Tuning Job](/api-reference/finetuning/post-finetuning-create) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -340,11 +338,10 @@ JSON Schema:
   ```
   </CodeGroup>
 
-  Filter recommended experiments and use them directly to launch the fine-tuning job.
   </Step>
 
   <Step>
-  # Monitor job progress
+  # Monitor job
 
   <CodeGroup>
   ```ts TypeScript
@@ -379,7 +376,7 @@ JSON Schema:
   ```
   </CodeGroup>
 
-  Poll job status every 10 seconds. Each experiment shows its progress and final model ID.
+  Monitor fine-tuning job progress and status. See [Get Fine-Tuning Job](/api-reference/finetuning/get-finetuning-jobid) for details.
   </Step>
 </Steps>
 

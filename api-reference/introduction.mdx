@@ -1,13 +1,13 @@
 ---
-title: 'Getting Started With The Prem API'
+title: 'Getting Started With Prem API'
 description: "Learn how to interact with Prem's API endpoints."
 ---
 
-<Card title="Prem Is Also OpenAI Compatible" icon="handshake" href="/get-started/quick-start">
+<Card title="Prem Is Also OpenAI Compatible" icon="handshake" href="/get-started/sdks">
 
 Instead of using the Prem API, you can use the OpenAI SDK to generate chat completions with **Prem** by just changing the `base URL` and adding your `API key`.
 
-Use our [Quickstart Guide](/get-started/quick-start) to learn how to use [Prem AI](/index) with OpenAI's API/SDK.
+See our [Client SDKs guide](/get-started/sdks) to learn how to use [Prem AI](/index) with OpenAI's API/SDK.
 
 </Card>
 
@@ -57,7 +57,7 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
   <Card
     title="Projects"
     icon="folder"
-    href="/api-reference/projects"
+    href="/api-reference/projects/post-projects-create"
   >
     Provision and inspect project workspaces
   </Card>
@@ -65,7 +65,7 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
   <Card
     title="Datasets"
     icon="database"
-    href="/api-reference/datasets"
+    href="/api-reference/datasets/post-datasets-create-from-jsonl"
   >
     Ingest JSONL files or trigger synthetic runs
   </Card>
@@ -73,7 +73,7 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
   <Card
     title="Snapshots"
     icon="scissors"
-    href="/api-reference/snapshots"
+    href="/api-reference/snapshots/post-snapshots-create"
   >
     Split datasets into train and validation sets
   </Card>
@@ -81,7 +81,7 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
   <Card
     title="Recommendations"
     icon="sparkles"
-    href="/api-reference/recommendations"
+    href="/api-reference/recommendations/post-recommendations-generate"
   >
     Request model suggestions for a snapshot
   </Card>
@@ -89,7 +89,7 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
   <Card
     title="Fine-Tuning"
     icon="wrench"
-    href="/api-reference/finetuning"
+    href="/api-reference/finetuning/post-finetuning-create"
   >
     Launch and monitor fine-tuning jobs
   </Card>
@@ -101,7 +101,7 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
   <Card
     title="Chat Completions"
     icon="message"
-    href="/api-reference/chat-completions"
+    href="/api-reference/chat-completions/post-chatcompletions"
   >
     Send prompts to deployed chat models
   </Card>
@@ -109,15 +109,15 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
   <Card
     title="Models"
     icon="brain"
-    href="/api-reference/models"
+    href="/api-reference/models/get-models"
   >
-    List, load, and unload available models
+    List all available models
   </Card>
 
   <Card
     title="Traces"
     icon="rectangle-history"
-    href="/api-reference/traces"
+    href="/api-reference/traces/post-traces"
   >
     Retrieve traces captured during inference
   </Card>
@@ -126,7 +126,15 @@ New to Prem? Start here! These comprehensive walkthroughs guide you through comp
 
 ### Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API endpoints are authenticated using Bearer tokens. You'll need to create an API key first - see our [API Key guide](/api-reference/api-key) for instructions.
+
+Once you have your API key, include it in the `Authorization` header:
+
+```bash
+Authorization: Bearer YOUR_API_KEY
+```
+
+The authentication is automatically picked up from the OpenAPI specification file:
 
 ```json
 "security": [

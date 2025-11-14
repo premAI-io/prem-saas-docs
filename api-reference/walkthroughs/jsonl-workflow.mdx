@@ -1,5 +1,5 @@
 ---
-title: "JSONL Dataset Workflow"
+title: "Fine-Tune from JSONL"
 description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning jobs."
 ---
 
@@ -10,7 +10,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
 
 <Steps>
   <Step>
-  # Setup: Define your JSONL file
+  # Set JSONL file path
 
   <CodeGroup>
   ```ts TypeScript
@@ -31,11 +31,12 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Define the path to your JSONL dataset file. Make sure the file exists and is properly formatted.
   </Step>
 
   <Step>
-  # Create a project
+  # Create project
+
+  Create a new project workspace. See [Create Project](/api-reference/projects/post-projects-create) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -61,11 +62,12 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Start by creating a project workspace. The `project_id` is required for all subsequent operations.
   </Step>
 
   <Step>
-  #  Upload JSONL dataset
+  # Upload JSONL file
+
+  Upload a JSONL file to create a dataset. See [Create Dataset from JSONL](/api-reference/datasets/post-datasets-create-from-jsonl) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -98,11 +100,12 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Upload your pre-formatted JSONL file. Each line should contain a chat conversation in the expected format. For details on the required dataset structure, see [Dataset Structure](/datasets/overview#dataset-structure).
   </Step>
 
   <Step>
-  #  Wait for dataset processing
+  # Wait for processing
+
+  Poll the dataset status until uploading completes. See [Get Dataset](/api-reference/datasets/get-datasets-datasetid) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -130,11 +133,12 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Poll the dataset status until processing completes. JSONL uploads are typically fast.
   </Step>
 
   <Step>
-  #  Create snapshot
+  # Create snapshot
+
+  Create a snapshot with train/validation split. See [Create Snapshot](/api-reference/snapshots/post-snapshots-create) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -160,11 +164,12 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Split the dataset into training and validation sets. The default 80/20 split works well for most cases.
   </Step>
 
   <Step>
-  #  Generate recommendations
+  # Get recommendations
+
+  Generate and retrieve model recommendations for your snapshot. See [Generate Recommendations](/api-reference/recommendations/post-recommendations-generate) and [Get Recommendations](/api-reference/recommendations/get-recommendations-snapshotid) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -209,11 +214,12 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Request model recommendations for your snapshot. Poll until recommendations are ready, then filter for recommended models.
   </Step>
 
   <Step>
-  #  Create fine-tuning job
+  # Start fine-tuning
+
+  Launch a fine-tuning job with recommended experiments. See [Create Fine-Tuning Job](/api-reference/finetuning/post-finetuning-create) for details.
 
   <CodeGroup>
   ```ts TypeScript
@@ -248,11 +254,10 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Filter recommended experiments and use them directly to launch the fine-tuning job.
   </Step>
 
   <Step>
-  #  Monitor job progress
+  # Monitor job
 
   <CodeGroup>
   ```ts TypeScript
@@ -287,7 +292,7 @@ description: "Upload a JSONL dataset, create snapshots, and launch fine-tuning j
   ```
   </CodeGroup>
 
-  Poll the job status every 10 seconds. Each experiment shows its status and final model ID when complete.
+  Monitor fine-tuning job progress and status. See [Get Fine-Tuning Job](/api-reference/finetuning/get-finetuning-jobid) for details.
   </Step>
 </Steps>
 
