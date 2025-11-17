@@ -233,19 +233,6 @@ You should see:
 
 Let's generate some text using the OpenAI-compatible API:
 <CodeGroup>
-```bash bash
-curl -X POST http://localhost:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "llama3.2-1b",
-    "messages": [
-      {"role": "system", "content": "You are a helpful assistant."},
-      {"role": "user", "content": "Write a short poem about artificial intelligence"}
-    ],
-    "max_tokens": 200,
-    "temperature": 0.7
-  }'
-```
 ```python OpenAI SDK
 from openai import OpenAI
 
@@ -281,6 +268,19 @@ response = requests.post(
 
 result = response.json()
 print(result['choices'][0]['message']['content'])
+```
+```bash bash
+curl -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "llama3.2-1b",
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Write a short poem about artificial intelligence"}
+    ],
+    "max_tokens": 200,
+    "temperature": 0.7
+  }'
 ```
 </CodeGroup>
 
