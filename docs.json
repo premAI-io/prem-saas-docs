@@ -71,6 +71,7 @@
             "group": "Inference 🏃‍♂️",
             "pages": [
               "inference/self-host",
+              "inference/deploy-with-nim",
               {
                 "group": "Guides",
                 "icon": "newspaper",
