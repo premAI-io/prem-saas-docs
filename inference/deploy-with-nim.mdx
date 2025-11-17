@@ -158,11 +158,9 @@ docker run -it --rm \
   --shm-size=16GB \
   -e NIM_MODEL_NAME="${MODEL_PATH}" \
   -e NIM_SERVED_MODEL_NAME="${MODEL_NAME}" \
-  -e NVIDIA_VISIBLE_DEVICES=0 \
   -v "${MODEL_PATH}:${MODEL_PATH}" \
   -v "/opt/nim/.cache:/opt/nim/.cache" \
   -u $(id -u) \
-  --security-opt apparmor=unconfined \
   -p 8000:8000 \
   $NIM_IMAGE
 ```
