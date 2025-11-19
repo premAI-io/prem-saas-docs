@@ -1,0 +1,91 @@
+---
+title: "Safety Guardrails with Nemotron & BYOE"
+description: "Learn how to adapt a Nemotron dataset, fine-tune a model, and evaluate safety guardrails using Bring Your Own Evaluation (BYOE)."
+---
+
+This tutorial guides you through creating a custom safety guardrail model. We will adapt the Nemotron dataset, fine-tune a model on Prem Studio, and evaluate it using a custom evaluator.
+
+## Prerequisites
+
+- A Prem Studio account
+- Basic familiarity with Python (for dataset adaptation scripts)
+
+<Steps>
+
+  <Step title="Adapt Nemotron Dataset">
+    First, we need to convert the [Nemotron Safety Guard Dataset](https://huggingface.co/datasets/nvidia/Nemotron-Safety-Guard-Dataset-v3) into a JSONL format compatible with Prem Studio.
+
+    Check out our tutorial on GitHub for a script to perform this conversion:
+
+    <Card title="Nemotron Dataset Adaptation" icon="github" href="https://github.com/premAI-io/prem-studio-tutorials/tree/main/tutorials/nemotron-safety-dataset-adaptation">
+      View the tutorial on GitHub to convert Nemotron data to Prem-compatible JSONL.
+    </Card>
+  </Step>
+
+  <Step title="Upload Dataset to Studio">
+    Once you have your `JSONL` file ready, upload it to Prem Studio.
+
+    Follow the internal guide on uploading datasets:
+
+    <Card title="Upload a Dataset" icon="upload" href="/datasets/get-started#uploading-a-dataset">
+      Learn how to upload your JSONL dataset to Prem Studio.
+    </Card>
+  </Step>
+
+  <Step title="Autosplit Dataset">
+    After uploading, split your dataset into training and validation sets using the Autosplit feature.
+
+    <Card title="How to Autosplit" icon="scissors" href="/datasets/autosplit-dataset#how-to-autosplit-a-dataset">
+      Follow the guide to automatically split your dataset.
+    </Card>
+  </Step>
+
+  <Step title="Create a Snapshot">
+    Create a snapshot of your split dataset.
+
+    The snapshot creates an immutable version of your data which is required for both **fine-tuning** and **evaluation**. This ensures that your results are reproducible and consistent across different runs.
+
+    <Card title="Create a Snapshot" icon="camera" href="/datasets/create-snapshot#how-to-create-a-snapshot">
+      Learn how to freeze your dataset version for training.
+    </Card>
+  </Step>
+
+  <Step title="Fine-Tuning and Experiments">
+    Now that your data is ready, you can start the fine-tuning process.
+
+    ### Create a Fine-Tuning Job
+
+    Start by creating a fine-tuning job with your snapshot.
+
+    <Card title="Get Started with Fine-Tuning" icon="play" href="/finetuning/get-started">
+      Follow the guide to create your first fine-tuning job.
+    </Card>
+
+    ### Configure Experiments
+
+    You can customize your training parameters using Experiments to get the best results.
+
+    <Card title="Experiment Settings" icon="sliders" href="/finetuning/experiments#getting-started-with-experiments">
+      Learn how to configure and manage fine-tuning experiments.
+    </Card>
+
+    ### Monitor Results
+
+    Once the training is complete, analyze the loss curves and metrics.
+
+    <Card title="View Results" icon="chart-line" href="/finetuning/experiments#experiment-results">
+      Understand how to interpret your fine-tuning results.
+    </Card>
+  </Step>
+
+  <Step title="Evaluation (BYOE)">
+    Finally, evaluate your fine-tuned model using **Bring Your Own Evaluation (BYOE)**.
+
+    You can implement your own evaluation logic using our BYOE framework. Check out the tutorial below to learn how to set it up:
+
+    <Card title="BYOE Tutorial" icon="github" href="https://github.com/premAI-io/prem-studio-tutorials/tree/main/tutorials/guarding-byoe">
+      Learn how to implement and integrate your own safety evaluator script.
+    </Card>
+  </Step>
+
+</Steps>

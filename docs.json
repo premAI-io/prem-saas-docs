@@ -114,6 +114,17 @@
         ]
       },
       {
+        "tab": "Tutorials",
+        "groups": [
+          {
+            "group": "End-to-End Workflows",
+            "pages": [
+              "tutorials/e2e/safety-guardrails"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Release Notes",
         "pages": [
           "release-notes/release-notes"
