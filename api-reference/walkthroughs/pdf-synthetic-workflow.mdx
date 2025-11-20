@@ -70,7 +70,6 @@ Build a structured data extraction model from PDFs:
   });
 
   formData.append('pairs_to_generate', '1');
-  formData.append('pair_type', 'qa');
   formData.append('temperature', '0');
 
   // Add rules and constraints
@@ -157,7 +156,6 @@ JSON Schema:
       'project_id': project_id,
       'name': 'Invoice Receipts Dataset',
       'pairs_to_generate': '1',
-      'pair_type': 'qa',
       'temperature': '0',
       'rules[]': [
           'Always include the full extracted text in the question',
@@ -437,7 +435,6 @@ async function main() {
 	});
 
 	formData.append('pairs_to_generate', '1');
-	formData.append('pair_type', 'qa');
 	formData.append('temperature', '0');
 
 	// Add rules and constraints
@@ -671,7 +668,6 @@ JSON Schema:
         "project_id": project_id,
         "name": "Invoice Receipts Dataset",
         "pairs_to_generate": "1",
-        "pair_type": "qa",
         "temperature": "0",
         "rules[]": [
             "Always include the full extracted text in the question",

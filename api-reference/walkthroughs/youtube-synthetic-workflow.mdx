@@ -81,7 +81,6 @@ Build a model that extracts structured data from YouTube videos:
   });
 
   formData.append('pairs_to_generate', '50');
-  formData.append('pair_type', 'qa');
   formData.append('temperature', '0.3');
 
   // Add rules and constraints
@@ -167,7 +166,6 @@ Provide the output in this JSON format:
       "project_id": project_id,
       "name": "Financial YouTube Dataset",
       "pairs_to_generate": "50",
-      "pair_type": "qa",
       "temperature": "0.3",
       "rules[]": [
           "stocks_mentioned: List all stock ticker symbols mentioned (e.g., AAPL, TSLA, NVDA)",
@@ -450,7 +448,6 @@ async function main() {
 	});
 
 	formData.append('pairs_to_generate', '50');
-	formData.append('pair_type', 'qa');
 	formData.append('temperature', '0.3');
 
 	// Add rules and constraints
@@ -681,7 +678,6 @@ Provide the output in this JSON format:
         "project_id": project_id,
         "name": "Financial YouTube Dataset",
         "pairs_to_generate": "50",
-        "pair_type": "qa",
         "temperature": "0.3",
         "rules[]": [
             "stocks_mentioned: List all stock ticker symbols mentioned (e.g., AAPL, TSLA, NVDA)",
