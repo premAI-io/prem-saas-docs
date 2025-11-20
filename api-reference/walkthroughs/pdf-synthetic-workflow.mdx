@@ -25,8 +25,11 @@ Build a structured data extraction model from PDFs:
   ```ts TypeScript
   const API_KEY = process.env.API_KEY;
 
-  // Define your invoice PDF files to process
-  const PDF_FILES = ['invoice_1.pdf', 'invoice_2.pdf', 'invoice_3.pdf'];
+  // Define your invoice PDF files to process (50 files, one QA pair per file)
+  const PDF_FILES: string[] = [];
+  for (let i = 1; i <= 50; i++) {
+    PDF_FILES.push(`invoice_${i}.pdf`);
+  }
   ```
   ```python Python
   import os
@@ -34,11 +37,12 @@ Build a structured data extraction model from PDFs:
 
   API_KEY = os.getenv("API_KEY")
 
-  # Define your invoice PDF files to process
-  PDF_FILES = ["invoice_1.pdf", "invoice_2.pdf", "invoice_3.pdf"]
+  # Define your invoice PDF files to process (50 files, one QA pair per file)
+  PDF_FILES = [f"invoice_{i}.pdf" for i in range(1, 51)]
   ```
   </CodeGroup>
 
+  Define the PDF files you want to process. Make sure these files exist in your working directory.
   </Step>
 
   <Step>
@@ -69,7 +73,7 @@ Build a structured data extraction model from PDFs:
     formData.append('files[]', pdfFile, pdfPath);
   });
 
-  formData.append('pairs_to_generate', '1');
+  formData.append('pairs_to_generate', String(PDF_FILES.length));
   formData.append('pair_type', 'qa');
   formData.append('temperature', '0');
 
@@ -156,7 +160,7 @@ JSON Schema:
   data = {
       'project_id': project_id,
       'name': 'Invoice Receipts Dataset',
-      'pairs_to_generate': '1',
+      'pairs_to_generate': str(len(PDF_FILES)),
       'pair_type': 'qa',
       'temperature': '0',
       'rules[]': [
@@ -394,7 +398,12 @@ JSON Schema:
 import { file } from 'bun';
 
 const API_KEY = process.env.API_KEY;
-const PDF_FILES = ['invoice_1.pdf', 'invoice_2.pdf', 'invoice_3.pdf'];
+
+// Define your invoice PDF files to process (50 files, one QA pair per file)
+const PDF_FILES: string[] = [];
+for (let i = 1; i <= 50; i++) {
+	PDF_FILES.push(`invoice_${i}.pdf`);
+}
 
 if (!API_KEY) {
 	console.error('Error: API_KEY environment variable is required');
@@ -436,7 +445,7 @@ async function main() {
 		formData.append('files[]', pdfFile, pdfPath);
 	});
 
-	formData.append('pairs_to_generate', '1');
+	formData.append('pairs_to_generate', String(PDF_FILES.length));
 	formData.append('pair_type', 'qa');
 	formData.append('temperature', '0');
 
@@ -605,7 +614,9 @@ import time
 import requests
 
 API_KEY = os.getenv("API_KEY")
-PDF_FILES = ["invoice_1.pdf", "invoice_2.pdf", "invoice_3.pdf"]
+
+# Define your invoice PDF files to process (50 files, one QA pair per file)
+PDF_FILES = [f"invoice_{i}.pdf" for i in range(1, 51)]
 
 if not API_KEY:
     print("Error: API_KEY environment variable is required")
@@ -670,7 +681,7 @@ JSON Schema:
     data = {
         "project_id": project_id,
         "name": "Invoice Receipts Dataset",
-        "pairs_to_generate": "1",
+        "pairs_to_generate": str(len(PDF_FILES)),
         "pair_type": "qa",
         "temperature": "0",
         "rules[]": [
