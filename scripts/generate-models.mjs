@@ -72,26 +72,25 @@ function generateModelCard(model) {
   // Build colored capability badges using CSS classes from custom.css
   const badges = [];
   if (model.finetuning) {
-    badges.push('<span class="badge-purple">Fine-tunable</span>');
+    badges.push('<span class="models-badge-purple">Fine-tunable</span>');
   }
   if (model.supportsJsonOutput) {
-    badges.push('<span class="badge-blue">JSON</span>');
+    badges.push('<span class="models-badge-blue">JSON</span>');
   }
   if (model.supportsFunctionCalling) {
-    badges.push('<span class="badge-green">Tools</span>');
+    badges.push('<span class="models-badge-green">Tools</span>');
   }
 
   const badgesLine = badges.length > 0 ? badges.join('') : '';
   const paramsLine = params ? ` · ${params}` : '';
 
   return `<Card title="${name}">
-<span style={{fontSize: '13px'}}>${formatTokens(model.maxCompletionTokens)} max tokens${paramsLine}</span>
-<div style={{fontSize: '12px', marginTop: '4px', marginBottom: '4px'}}>
+<div class="models-card-tokens">${formatTokens(model.maxCompletionTokens)} max tokens${paramsLine}</div>
+<div class="models-card-pricing">
 
 | Input | Output |
 |:--|:--|
 | ${formatPrice(model.inputPricePer1MTokens)}/1M | ${formatPrice(model.outputPricePer1MTokens)}/1M |
-
 </div>
 ${badgesLine}
 </Card>`;
@@ -143,9 +142,9 @@ function generateGroupSection(groupName, models) {
   const modelCount = models.length;
 
   let section = `
-<div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', marginBottom: '8px'}}>
-  <img src="${icon}" alt="${title}" width="22" height="22" style={{borderRadius: '4px'}} />
-  <span style={{fontSize: '16px', fontWeight: '600'}}>${title} (${modelCount})</span>
+<div class="models-group-header">
+  <img src="${icon}" alt="${title}" class="models-group-icon" />
+  <span class="models-group-title">${title} (${modelCount})</span>
 </div>
 <CardGroup cols={2}>
 `;
