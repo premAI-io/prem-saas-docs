@@ -1,0 +1,7 @@
+{
+  "name": "prem-saas-docs",
+  "private": true,
+  "scripts": {
+    "prebuild": "node scripts/generate-models.mjs"
+  }
+}

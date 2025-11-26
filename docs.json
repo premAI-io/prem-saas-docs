@@ -114,9 +114,10 @@
         ]
       },
       {
-        "tab": "Release Notes",
+        "tab": "Resources",
         "pages": [
-          "release-notes/release-notes"
+          "resources/release-notes",
+          "resources/available-models"
         ]
       },
       {
