@@ -65,9 +65,15 @@ function getGroupIcon(group) {
   return icons[group.toLowerCase()] || DEFAULT_ICON;
 }
 
+// Get model icon based on group
+function getModelIcon(group) {
+  return getGroupIcon(group);
+}
+
 function generateModelCard(model) {
   const name = model.alias || model.id;
   const params = formatParameters(model.parameter_count);
+  const icon = getModelIcon(model.group);
 
   // Build colored capability badges using CSS classes from custom.css
   const badges = [];
@@ -84,7 +90,11 @@ function generateModelCard(model) {
   const badgesLine = badges.length > 0 ? badges.join('') : '';
   const paramsLine = params ? ` · ${params}` : '';
 
-  return `<Card title="${name}">
+  return `<Card>
+<div class="models-card-header">
+  <img src="${icon}" alt="${name}" class="models-card-icon" />
+  <span class="models-card-name">${name}</span>
+</div>
 <div class="models-card-tokens">${formatTokens(model.maxCompletionTokens)} max tokens${paramsLine}</div>
 <div class="models-card-pricing">
 

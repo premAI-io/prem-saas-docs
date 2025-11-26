@@ -68,6 +68,25 @@
   font-weight: 600;
 }
 
+/* Card header with icon and name */
+.models-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.models-card-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+}
+
+.models-card-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
 /* Card content - reduce vertical spacing */
 .models-card-tokens {
   font-size: 13px;
