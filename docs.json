@@ -2,6 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Prem",
+  "css": "/custom.css",
   "colors": {
   "primary": "#4c6ef5",
   "light": "#4c6ef5",

@@ -1,0 +1,46 @@
+.badge-purple {
+  background: #f3e8ff;
+  color: #7c3aed;
+  padding: 0px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: 6px;
+  display: inline-block;
+}
+
+.badge-blue {
+  background: #dbeafe;
+  color: #2563eb;
+  padding: 0px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-right: 6px;
+  display: inline-block;
+}
+
+.badge-green {
+  background: #d1fae5;
+  color: #059669;
+  padding: 0px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.dark .badge-purple {
+  background: #9333ea;
+  color: #fff;
+}
+
+.dark .badge-blue {
+  background: #2563eb;
+  color: #fff;
+}
+
+.dark .badge-green {
+  background: #059669;
+  color: #fff;
+}

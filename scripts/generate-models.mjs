@@ -42,48 +42,57 @@ function formatParameters(paramCount) {
   return `${paramCount}B`;
 }
 
-// Map group names to Mintlify icons (using Font Awesome icons available in Mintlify)
+// Default icon for groups without a specific icon
+const DEFAULT_ICON = '/images/model-icons/hf.png';
+
+// Get group icon for section header
 function getGroupIcon(group) {
   const icons = {
-    'claude': 'message',
-    'gpt': 'robot',
-    'gpt-oss': 'robot',
-    'llama': 'meta',
-    'qwen': 'cloud',
-    'gemma': 'google',
-    'mistral': 'wind',
-    'deepseek': 'magnifying-glass',
-    'phi': 'microsoft',
-    'nova': 'aws',
-    'ibm': 'server',
-    'nvidia': 'microchip',
-    'glm': 'brain',
-    'osmosis': 'flask',
-    'smollm2': 'minimize',
+    'claude': '/images/model-icons/anthropic.webp',
+    'gpt': '/images/model-icons/openai.svg',
+    'gpt-oss': '/images/model-icons/openai.svg',
+    'llama': '/images/model-icons/meta.png',
+    'qwen': '/images/model-icons/qwen.png',
+    'gemma': '/images/model-icons/google.png',
+    'mistral': '/images/model-icons/mistralai.png',
+    'deepseek': '/images/model-icons/deepseek.png',
+    'phi': '/images/model-icons/microsoft.png',
+    'nova': '/images/model-icons/nova.png',
+    'ibm': '/images/model-icons/ibm.png',
+    'nvidia': '/images/model-icons/nvidia.svg',
+    'glm': '/images/model-icons/z_ai.svg',
   };
-  return icons[group.toLowerCase()] || 'cube';
+  return icons[group.toLowerCase()] || DEFAULT_ICON;
 }
 
 function generateModelCard(model) {
   const name = model.alias || model.id;
   const params = formatParameters(model.parameter_count);
 
-  // Build capability badges
+  // Build colored capability badges using CSS classes from custom.css
   const badges = [];
-  if (model.finetuning) badges.push('`Fine-tunable`');
-  if (model.supportsJsonOutput) badges.push('`JSON`');
-  if (model.supportsFunctionCalling) badges.push('`Tools`');
+  if (model.finetuning) {
+    badges.push('<span class="badge-purple">Fine-tunable</span>');
+  }
+  if (model.supportsJsonOutput) {
+    badges.push('<span class="badge-blue">JSON</span>');
+  }
+  if (model.supportsFunctionCalling) {
+    badges.push('<span class="badge-green">Tools</span>');
+  }
 
-  const badgesLine = badges.length > 0 ? badges.join(' ') : '';
-  const paramsLine = params ? ` · **${params}** params` : '';
+  const badgesLine = badges.length > 0 ? badges.join('') : '';
+  const paramsLine = params ? ` · ${params}` : '';
 
   return `<Card title="${name}">
-**${formatTokens(model.maxCompletionTokens)}** max tokens${paramsLine}
+<span style={{fontSize: '13px'}}>${formatTokens(model.maxCompletionTokens)} max tokens${paramsLine}</span>
+<div style={{fontSize: '12px', marginTop: '4px', marginBottom: '4px'}}>
 
 | Input | Output |
-|-------|--------|
+|:--|:--|
 | ${formatPrice(model.inputPricePer1MTokens)}/1M | ${formatPrice(model.outputPricePer1MTokens)}/1M |
 
+</div>
 ${badgesLine}
 </Card>`;
 }
@@ -131,11 +140,13 @@ function capitalizeGroup(group) {
 function generateGroupSection(groupName, models) {
   const title = capitalizeGroup(groupName);
   const icon = getGroupIcon(groupName);
+  const modelCount = models.length;
 
   let section = `
-<AccordionGroup>
-<Accordion title="${title}" icon="${icon}">
-
+<div style={{display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', marginBottom: '8px'}}>
+  <img src="${icon}" alt="${title}" width="22" height="22" style={{borderRadius: '4px'}} />
+  <span style={{fontSize: '16px', fontWeight: '600'}}>${title} (${modelCount})</span>
+</div>
 <CardGroup cols={2}>
 `;
 
@@ -144,9 +155,6 @@ function generateGroupSection(groupName, models) {
   }
 
   section += `</CardGroup>
-
-</Accordion>
-</AccordionGroup>
 `;
 
   return section;
