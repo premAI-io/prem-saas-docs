@@ -151,7 +151,8 @@
             "pages": [
               "api-reference/datasets/post-datasets-create-from-jsonl",
               "api-reference/datasets/post-datasets-create-synthetic",
-              "api-reference/datasets/get-datasets-datasetid"
+              "api-reference/datasets/get-datasets-datasetid",
+              "api-reference/datasets/post-datasets-start-augmentation"
             ]
           },
           {
