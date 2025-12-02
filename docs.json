@@ -126,16 +126,8 @@
             "group": "API Get Started",
             "pages": [
               "api-reference/introduction",
-              "api-reference/api-key"
-            ]
-          },
-          {
-            "group": "Walkthroughs 🎯",
-            "pages": [
-              "api-reference/walkthroughs/jsonl-workflow",
-              "api-reference/walkthroughs/youtube-synthetic-workflow",
-              "api-reference/walkthroughs/pdf-synthetic-workflow",
-              "api-reference/walkthroughs/continuous-finetuning-workflow"
+              "api-reference/api-key",
+              "api-reference/github-tutorials"
             ]
           },
           {
