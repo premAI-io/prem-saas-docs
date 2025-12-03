@@ -3,12 +3,13 @@
 import PremAI from "premai";
 
 const client = new PremAI({
+    base_url: "https://studio.premai.io/",
     apiKey: process.env.PREMAI_API_KEY,
 });
 
 // Create a chat completion
 const response = await client.chat.completions({
-    kidmodel: "llama3.2-3b", //Or any other model you want to use
+    model: "llama3.2-3b", //Or any other model you want to use
     messages: [{
         role: "user",
         content: "Write a one-sentence bedtime story about a unicorn."
@@ -25,6 +26,7 @@ import os
 from premai import PremAI
 
 client = PremAI(
+    base_url="https://studio.premai.io/",
     api_key=os.environ.get("PREMAI_API_KEY"),
 )
 
@@ -39,27 +41,6 @@ response = client.chat.completions(
 )
 
 for chunk in response:
-    print(chunk.choices[0].delta.content, end='', flush=True)
-```
-```python python (async)
-import os
-from premai import AsyncPremAI
-
-client = AsyncPremAI(
-    api_key=os.environ.get("PREMAI_API_KEY"),
-)
-
-# Create completion
-response = await client.chat.completions(
-    messages=[{
-        "role": "user",
-        "content": "Write a one-sentence bedtime story about a unicorn."
-    }],
-    model="llama3.2-3b", # Or any other model you want to use
-    stream=True,
-)
-
-async for chunk in response:
     print(chunk.choices[0].delta.content, end='', flush=True)
 ```
 </CodeGroup>
