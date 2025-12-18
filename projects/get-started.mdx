@@ -28,7 +28,7 @@ Projects provide a guided, end-to-end workflow for AI model development. This gu
 
 ## Step 2: Create and Handle Dataset
 
-You have **two paths** for dataset creation. Choose the one that fits your situation:
+You have **three paths** for dataset creation. Choose the one that fits your situation:
 
 ### Path A: Upload Existing JSONL Dataset
 Upload your existing dataset in JSONL format.
@@ -40,7 +40,7 @@ Upload your existing dataset in JSONL format.
     - **Validation**: The system will automatically validate your dataset format
 
     <Note>
-      Need help with JSONL format? See our [Datasets Overview](/datasets/overview) for detailed formatting requirements.
+      Need help with JSONL format? See our [Datasets Overview](/datasets/overview) for detailed formatting requirements. For detailed instructions, see [Upload a JSONL Dataset](/datasets/upload-jsonl).
     </Note>
   </Step>
 </Steps>
@@ -99,6 +99,37 @@ Generate synthetic dataset from your content (PDFs, web pages, youtube videos)
     <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/synthetic-gen/step-3-summary.png" alt="Synthetic generation review and confirmation" />
   </Step>
 </Steps>
+
+    <Note>
+      For detailed instructions, see [Generate a Synthetic Dataset](/datasets/generate-synthetic).
+    </Note>
+
+### Path C: Import from Hugging Face
+Import a dataset from Hugging Face and convert it to conversation format using custom templates.
+
+<Steps>
+  <Step title="Configure Dataset and Source">
+    - **Dataset Name**: Enter a descriptive name for your imported dataset
+    - **Dataset URL or ID**: Enter the Hugging Face dataset identifier (e.g., `openai/gsm8k`)
+    - **API Key** (Optional): Only required for private datasets
+  </Step>
+
+  <Step title="Select Subset and Split">
+    - **Subset (Config)**: Choose which subset to import (e.g., "main")
+    - **Split**: Select the split to import (e.g., "train", "test", "validation")
+    - Review the available columns and row counts
+  </Step>
+
+  <Step title="Define Templates">
+    - **User Prompt Template**: Map dataset columns to user messages using `{{column_name}}` placeholders
+    - **Assistant Response Template**: Map dataset columns to assistant responses using `{{column_name}}` placeholders
+    - Review the preview to ensure correct formatting
+  </Step>
+</Steps>
+
+    <Note>
+      For detailed instructions and examples, see [Import Dataset from Hugging Face](/datasets/import-huggingface).
+    </Note>
 
 ### Snapshot Creation
 Regardless of which path you chose (upload or synthetic generation), you need to create a snapshot:

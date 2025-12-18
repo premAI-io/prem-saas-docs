@@ -1,0 +1,101 @@
+---
+title: Import Dataset from Hugging Face
+description: Learn how to import datasets from Hugging Face using custom templates.
+---
+
+# Import a Dataset from Hugging Face
+
+Import datasets directly from Hugging Face and convert them into conversation format using custom templates. This is perfect for leveraging popular datasets like [GSM8K](https://huggingface.co/datasets/openai/gsm8k) and other community datasets.
+
+<Steps>
+  <Step title="Create a Dataset and Select Import from Hugging Face">
+    Click the **+ Create Dataset** button in the top-right corner of the page, then in the dataset creation modal, select **Import from Hugging Face** to import a dataset using custom templates.
+
+    <img src="https://static.premai.io/prem-saas-docs/datasets/import-huggingface/step-0-select-option.png" alt="Select Import from Hugging Face option in dataset creation modal" />
+  </Step>
+
+  <Step title="Step 1: Configure Dataset and Hugging Face Source">
+    - **Dataset Name**: Enter a descriptive name for your imported dataset (e.g., "gsm8k").
+    - **Dataset URL or ID**: Enter the Hugging Face dataset identifier in the format `username/dataset-name` (e.g., `openai/gsm8k`).
+    - **API Key** (Optional): Only required if the dataset is private. Get your API key from [Hugging Face settings](https://huggingface.co/settings/tokens).
+
+    <img src="https://static.premai.io/prem-saas-docs/datasets/import-huggingface/step-1-configure-dataset.png" alt="Configure dataset name and Hugging Face dataset URL or ID" />
+
+    <Tip>
+      You can find datasets on [Hugging Face Datasets](https://huggingface.co/datasets). The dataset ID is shown in the URL or at the top of the dataset page.
+    </Tip>
+  </Step>
+
+  <Step title="Step 2: Select Subset and Split">
+    After the system finds your dataset, you'll see:
+    - **Available Columns**: All columns present in the dataset
+    - **Rows Count**: Total number of rows in each split
+
+    Configure the import:
+    - **Subset (Config)**: Select which subset or configuration to import (e.g., "main").
+    - **Split**: Choose which split to import (e.g., "train", "test", "validation") and see the row count for each.
+
+    <img src="https://static.premai.io/prem-saas-docs/datasets/import-huggingface/step-2-select-subset-split.png" alt="Select subset and split with available columns and row counts" />
+
+    <Tip>
+      For datasets like GSM8K, the "main" config with the "train" split typically contains the most data. Review the available splits to choose the one that fits your needs.
+    </Tip>
+  </Step>
+
+  <Step title="Step 3: Define Conversation Templates">
+    Map your dataset columns to conversation format using template placeholders:
+
+    - **User Prompt Template**: Define how user messages are generated using `{{column_name}}` placeholders.
+      - Type `{{` to see column suggestions, or click column badges to insert them.
+      - Example: `{{question}}` for a question-answer dataset.
+
+    - **Assistant Response Template**: Define how assistant responses are generated using `{{column_name}}` placeholders.
+      - Example: `{{answer}}` for a question-answer dataset.
+
+    - **Preview**: See a live preview of how your datapoints will look with the current templates.
+
+    <img src="https://static.premai.io/prem-saas-docs/datasets/import-huggingface/step-3-define-templates.png" alt="Define user prompt and assistant response templates with preview" />
+
+    <Tip>
+      The preview shows exactly how your imported data will be formatted. Make sure the templates correctly map to your dataset structure before proceeding.
+    </Tip>
+  </Step>
+
+  <Step title="Complete Import">
+    Review your configuration and click **Import** to create your dataset. The import process will convert the Hugging Face dataset into Prem's conversation format using your templates.
+  </Step>
+</Steps>
+
+## Example: Importing GSM8K
+
+The [GSM8K dataset](https://huggingface.co/datasets/openai/gsm8k) is a popular dataset for mathematical reasoning. To import it:
+
+1. **Dataset ID**: `openai/gsm8k`
+2. **Subset**: `main`
+3. **Split**: `train` (contains 7,473 examples)
+4. **User Template**: `{{question}}`
+5. **Assistant Template**: `{{answer}}`
+
+This will create a dataset where each mathematical question becomes a user message and the corresponding solution becomes the assistant response.
+
+---
+
+# Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create a Snapshot" icon="camera" href="/datasets/create-snapshot">
+    Create a snapshot of your dataset to save your current state.
+  </Card>
+  <Card title="Enrich a Dataset" icon="sparkles" href="/datasets/enrich-dataset">
+    Start a data augmentation job to add synthetic data to your dataset.
+  </Card>
+</CardGroup>
+
+<CardGroup cols={2}>
+  <Card title="Autosplit a Dataset" icon="split" href="/datasets/autosplit-dataset">
+    Automatically split your dataset into training, validation, and test sets.
+  </Card>
+  <Card title="Fine-Tune a Model" icon="robot" href="/finetuning/overview">
+    Fine-tune a model on your dataset.
+  </Card>
+</CardGroup>

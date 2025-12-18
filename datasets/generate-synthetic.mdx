@@ -1,38 +1,23 @@
 ---
-title: Get Started With Datasets
-description: Learn how to upload, generate, manage, and use datasets in Prem.
+title: Generate a Synthetic Dataset from Scratch
+description: Learn how to generate synthetic datasets from files, YouTube videos, websites, or a mix of sources.
 ---
 
-# Creating a Dataset
-In Prem, you can build datasets in two ways:
-- **Upload an existing dataset** in `JSONL` format.
-- **Generate synthetic datasets** directly from different input sources such as files, YouTube videos, websites, or a mix of sources.
+# Generate a Dataset with Synthetic Data Generation
 
-## Uploading a Dataset
+Synthetic data generation lets you create datasets from various input sources beyond JSONL. You can import documents, scrape websites, process YouTube videos, or combine multiple sources into one dataset.
+
 <Steps>
   <Step title="Create a Dataset">
-      Click the **+ Create Dataset** button in the top-right corner of the page.
+    Click the **+ Create Dataset** button in the top-right corner of the page.
 
     <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/step-0-createDataset.gif" alt="GIF of clicking the create a dataset button" />
   </Step>
 
-  <Step title="Upload a File">
-
-    - Enter a name for your dataset.
-    - Upload your `JSONL` file.
-    - Click **Confirm** to create the dataset.
-
-    <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/step-2-upload-dataset.gif" alt="GIF of uploading a file" />
-    <Tip>
-      Refer to our [Datasets](/datasets/overview) documentation for more information on the `JSONL` file format.
-    </Tip>
+  <Step title="Select Synthetic Data Option">
+    In the dataset creation modal, select **Synthetic data** to generate a dataset from your content.
   </Step>
-</Steps>
 
-## Generate a Dataset with Synthetic Data Generation
-Synthetic data generation lets you create datasets from various input sources beyond JSONL. You can import documents, scrape websites, process YouTube videos, or combine multiple sources into one dataset.
-
-<Steps>
   <Step title="Step 1: Define Dataset and Sources">
     - Enter a descriptive dataset name.
     - Choose one or more data sources:
@@ -49,7 +34,7 @@ Synthetic data generation lets you create datasets from various input sources be
     Get control of the generation process by setting additional parameters:
     - **Rules & Constraints** – add conditions for the generated content (e.g., enforce style, define tone, restrict scope).
     - **QA Guidance** – provide example pairs or specify output formats.
-    - **Creativity Level** – adjust the model’s temperature to balance consistency vs. variety.
+    - **Creativity Level** – adjust the model's temperature to balance consistency vs. variety.
 
     <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/synthetic-gen/step-2-advanced-settings.gif" alt="Synthetic Dataset Generation - Define advanced settings" />
   </Step>
@@ -62,7 +47,8 @@ Synthetic data generation lets you create datasets from various input sources be
   </Step>
 </Steps>
 
-### Options for Synthetic Data Generation
+## Options for Synthetic Data Generation
+
 When generating synthetic datasets, you can configure:
 - **Data Sources** – files, YouTube videos, websites, or a mix.
 - **Synthetic Pairs Configuration** – number of QA pairs per input.
@@ -77,20 +63,19 @@ For deeper explanations and advanced usage, see our user guide on how to [Genera
 # Next Steps
 
 <CardGroup cols={2}>
-    <Card title="Enrich a Dataset" icon="sparkles" href="/datasets/enrich-dataset">
-        Start a data augmentation job to add synthetic data to your dataset.
-    </Card>
-    <Card title="Create a Snapshot" icon="camera" href="/datasets/create-snapshot">
-        Create a snapshot of your dataset to save your current state.
-    </Card>
-
+  <Card title="Create a Snapshot" icon="camera" href="/datasets/create-snapshot">
+    Create a snapshot of your dataset to save your current state.
+  </Card>
+  <Card title="Enrich a Dataset" icon="sparkles" href="/datasets/enrich-dataset">
+    Start a data augmentation job to add synthetic data to your dataset.
+  </Card>
 </CardGroup>
 
 <CardGroup cols={2}>
-    <Card title="Autosplit a Dataset" icon="split" href="/datasets/autosplit-dataset">
-        Automatically split your dataset into training, validation, and test sets.
-    </Card>
-    <Card title="Fine-Tune a Model" icon="robot" href="/finetuning/overview">
-        Fine-tune a model on your dataset.
-    </Card>
+  <Card title="Autosplit a Dataset" icon="split" href="/datasets/autosplit-dataset">
+    Automatically split your dataset into training, validation, and test sets.
+  </Card>
+  <Card title="Fine-Tune a Model" icon="robot" href="/finetuning/overview">
+    Fine-tune a model on your dataset.
+  </Card>
 </CardGroup>
