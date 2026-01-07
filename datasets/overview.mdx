@@ -4,8 +4,7 @@ description: Learn how to create and use datasets to fine-tune your models.
 ---
 
 <Note>
-  Check out the [Get Started](/datasets/get-started) guide to learn how to
-  create and use datasets.
+  You can create datasets in three ways: [upload a JSONL file](/datasets/upload-jsonl), [generate synthetic data](/datasets/generate-synthetic), or [import from Hugging Face](/datasets/import-huggingface). Choose the method that best fits your needs.
 </Note>
 
 <iframe
@@ -52,18 +51,25 @@ Example Format
 This format teaches the model that when given the system instruction to act as a customer service agent and asked about returns, it should respond with the specific return process information.
 
 
-# Next Step: Create a Dataset
+# Create a Dataset
 
-<Card title="Create a Dataset" icon="database" href="/datasets/get-started">
-  Click here to learn how to create a dataset.
-</Card>
+In Prem, you can create datasets in three ways:
+
+<CardGroup cols={3}>
+  <Card title="Upload JSONL" icon="upload" href="/datasets/upload-jsonl">
+    Upload an existing dataset in JSONL format.
+  </Card>
+  <Card title="Generate Synthetic Data" icon="sparkles" href="/datasets/generate-synthetic">
+    Generate datasets from files, videos, or websites.
+  </Card>
+  <Card title="Import from Hugging Face" icon="database" href="/datasets/import-huggingface">
+    Import datasets from Hugging Face using templates.
+  </Card>
+</CardGroup>
 
 # Do More With Datasets
 
 <CardGroup cols={2}>
-  <Card title="Create a Dataset" icon="database" href="/datasets/get-started">
-    Learn how to create a dataset.
-  </Card>
   <Card
     title="Create a Snapshot"
     icon="camera"

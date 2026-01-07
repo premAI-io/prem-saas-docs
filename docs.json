@@ -37,7 +37,9 @@
             "group": "Datasets 🗃️",
             "pages": [
               "datasets/overview",
-              "datasets/get-started",
+              "datasets/upload-jsonl",
+              "datasets/generate-synthetic",
+              "datasets/import-huggingface",
               "datasets/enrich-dataset",
               "datasets/autosplit-dataset",
               "datasets/create-snapshot",

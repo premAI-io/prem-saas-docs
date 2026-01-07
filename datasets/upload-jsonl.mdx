@@ -1,0 +1,61 @@
+---
+title: Upload a JSONL Dataset
+description: Learn how to upload an existing dataset in JSONL format to Prem.
+---
+
+# Uploading a JSONL Dataset
+
+Upload your existing dataset in `JSONL` format to get started with fine-tuning in Prem.
+
+<Steps>
+  <Step title="Create a Dataset">
+    Click the **+ Create Dataset** button in the top-right corner of the page.
+
+    <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/step-0-createDataset.gif" alt="GIF of clicking the create a dataset button" />
+  </Step>
+
+  <Step title="Select Upload File Option">
+    In the dataset creation modal, select **Upload file** to upload an existing JSONL dataset.
+  </Step>
+
+  <Step title="Upload Your File">
+    - Enter a name for your dataset.
+    - Upload your `JSONL` file.
+    - Click **Confirm** to create the dataset.
+
+    <img src="https://static.premai.io/prem-saas-docs/datasets/get-started/step-2-upload-dataset.gif" alt="GIF of uploading a file" />
+    <Tip>
+      Refer to our [Datasets Overview](/datasets/overview) documentation for more information on the `JSONL` file format.
+    </Tip>
+  </Step>
+</Steps>
+
+## Dataset Format Requirements
+
+Your JSONL file should follow the standard format where each line contains a JSON object with a `messages` field. Each message should have:
+- A `role` field: `"system"`, `"user"`, or `"assistant"`
+- A `content` field: containing the actual text
+
+For detailed formatting requirements and examples, see our [Datasets Overview](/datasets/overview).
+
+---
+
+# Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Create a Snapshot" icon="camera" href="/datasets/create-snapshot">
+    Create a snapshot of your dataset to save your current state.
+  </Card>
+  <Card title="Enrich a Dataset" icon="sparkles" href="/datasets/enrich-dataset">
+    Start a data augmentation job to add synthetic data to your dataset.
+  </Card>
+</CardGroup>
+
+<CardGroup cols={2}>
+  <Card title="Autosplit a Dataset" icon="split" href="/datasets/autosplit-dataset">
+    Automatically split your dataset into training, validation, and test sets.
+  </Card>
+  <Card title="Fine-Tune a Model" icon="robot" href="/finetuning/overview">
+    Fine-tune a model on your dataset.
+  </Card>
+</CardGroup>
